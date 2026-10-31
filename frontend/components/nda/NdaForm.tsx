@@ -1,7 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { MAX_TERM_YEARS, MIN_TERM_YEARS, parseTermYears } from "@/lib/nda/coverPage";
 import type { NdaData, Party } from "@/lib/nda/types";
+
+/** Party fields appear in a non-breaking signature table in the PDF, so keep them short. */
+const PARTY_FIELD_MAX_LENGTH = 200;
 
 type Props = {
   data: NdaData;
@@ -32,6 +36,11 @@ function Fieldset({ legend, children }: { legend: string; children: ReactNode })
   );
 }
 
+/**
+ * Whole-number year input. The text is kept locally so the field can be
+ * cleared and retyped; only valid values (1–99) are passed to onChange, and
+ * the field reverts to the last valid value on blur.
+ */
 function YearsInput({
   value,
   disabled,
@@ -43,16 +52,31 @@ function YearsInput({
   onChange: (years: number) => void;
   label: string;
 }) {
+  const [text, setText] = useState(String(value));
+  const [syncedValue, setSyncedValue] = useState(value);
+  if (value !== syncedValue) {
+    setSyncedValue(value);
+    setText(String(value));
+  }
+  const invalid = parseTermYears(text) === null;
+
   return (
     <input
-      type="number"
-      min={1}
-      max={99}
-      aria-label={label}
-      className={`${inputClass} w-20`}
-      value={value}
+      type="text"
+      inputMode="numeric"
+      maxLength={2}
+      aria-label={`${label} (${MIN_TERM_YEARS}–${MAX_TERM_YEARS})`}
+      aria-invalid={invalid}
+      className={`${inputClass} w-20 ${invalid ? "border-red-500" : ""}`}
+      value={text}
       disabled={disabled}
-      onChange={(e) => onChange(Math.max(1, Number(e.target.value) || 1))}
+      onChange={(e) => {
+        const next = e.target.value.replace(/\D/g, "");
+        setText(next);
+        const years = parseTermYears(next);
+        if (years !== null) onChange(years);
+      }}
+      onBlur={() => setText(String(value))}
     />
   );
 }
@@ -67,10 +91,19 @@ export function NdaForm({ data, onChange }: Props) {
     update("parties", parties);
   };
 
-  // Year counts shown in the inputs; they reset to 1 when the open-ended option is chosen.
-  const mndaYears = data.mndaTerm.kind === "expires" ? data.mndaTerm.years : 1;
+  // Remember the year counts while an open-ended option is selected, so
+  // switching back restores what the user entered.
+  const [savedMndaYears, setSavedMndaYears] = useState(
+    data.mndaTerm.kind === "expires" ? data.mndaTerm.years : 1,
+  );
+  const [savedConfidentialityYears, setSavedConfidentialityYears] = useState(
+    data.confidentialityTerm.kind === "years" ? data.confidentialityTerm.years : 1,
+  );
+  const mndaYears = data.mndaTerm.kind === "expires" ? data.mndaTerm.years : savedMndaYears;
   const confidentialityYears =
-    data.confidentialityTerm.kind === "years" ? data.confidentialityTerm.years : 1;
+    data.confidentialityTerm.kind === "years"
+      ? data.confidentialityTerm.years
+      : savedConfidentialityYears;
 
   return (
     <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
@@ -117,7 +150,10 @@ export function NdaForm({ data, onChange }: Props) {
               type="radio"
               name="mndaTerm"
               checked={data.mndaTerm.kind === "untilTerminated"}
-              onChange={() => update("mndaTerm", { kind: "untilTerminated" })}
+              onChange={() => {
+                setSavedMndaYears(mndaYears);
+                update("mndaTerm", { kind: "untilTerminated" });
+              }}
             />
             Continues until terminated
           </label>
@@ -150,7 +186,10 @@ export function NdaForm({ data, onChange }: Props) {
               type="radio"
               name="confidentialityTerm"
               checked={data.confidentialityTerm.kind === "perpetual"}
-              onChange={() => update("confidentialityTerm", { kind: "perpetual" })}
+              onChange={() => {
+                setSavedConfidentialityYears(confidentialityYears);
+                update("confidentialityTerm", { kind: "perpetual" });
+              }}
             />
             In perpetuity
           </label>
@@ -190,6 +229,7 @@ export function NdaForm({ data, onChange }: Props) {
             <Field label="Print Name">
               <input
                 className={inputClass}
+                maxLength={PARTY_FIELD_MAX_LENGTH}
                 value={data.parties[index].printName}
                 onChange={(e) => updateParty(index, "printName", e.target.value)}
               />
@@ -197,6 +237,7 @@ export function NdaForm({ data, onChange }: Props) {
             <Field label="Title">
               <input
                 className={inputClass}
+                maxLength={PARTY_FIELD_MAX_LENGTH}
                 value={data.parties[index].title}
                 onChange={(e) => updateParty(index, "title", e.target.value)}
               />
@@ -205,6 +246,7 @@ export function NdaForm({ data, onChange }: Props) {
           <Field label="Company">
             <input
               className={inputClass}
+              maxLength={PARTY_FIELD_MAX_LENGTH}
               value={data.parties[index].company}
               onChange={(e) => updateParty(index, "company", e.target.value)}
             />
@@ -212,6 +254,7 @@ export function NdaForm({ data, onChange }: Props) {
           <Field label="Notice Address" hint="Email or postal address">
             <input
               className={inputClass}
+              maxLength={PARTY_FIELD_MAX_LENGTH}
               value={data.parties[index].noticeAddress}
               onChange={(e) => updateParty(index, "noticeAddress", e.target.value)}
             />

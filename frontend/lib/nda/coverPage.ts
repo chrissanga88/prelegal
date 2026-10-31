@@ -28,15 +28,35 @@ export function todayIso(now: Date = new Date()): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-/** Formats a YYYY-MM-DD date as e.g. "October 30, 2026". */
+/**
+ * Formats a YYYY-MM-DD date as e.g. "October 30, 2026". Returns "" for
+ * anything that isn't a complete, real calendar date with a four-digit year
+ * (such as the partial years a date input reports while the user is typing).
+ */
 export function formatDate(isoDate: string): string {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  if (!year || !month || !day) return "";
-  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!match) return "";
+  const [year, month, day] = match.slice(1).map(Number);
+  if (year < 1000) return "";
+
+  // setFullYear avoids the Date constructor mapping years 0–99 to 1900–1999.
+  const date = new Date(0);
+  date.setFullYear(year, month - 1, day);
+  date.setHours(0, 0, 0, 0);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return ""; // e.g. February 30
+  }
+  return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+}
+
+export const MIN_TERM_YEARS = 1;
+export const MAX_TERM_YEARS = 99;
+
+/** Parses a term length typed by the user; null unless a whole number from 1 to 99. */
+export function parseTermYears(text: string): number | null {
+  if (!/^\d{1,2}$/.test(text.trim())) return null;
+  const years = Number(text);
+  return years >= MIN_TERM_YEARS && years <= MAX_TERM_YEARS ? years : null;
 }
 
 function pluralizeYears(years: number): string {

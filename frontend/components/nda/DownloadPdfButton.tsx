@@ -4,6 +4,8 @@ import { useState } from "react";
 import { pdfFileName } from "@/lib/nda/coverPage";
 import type { NdaData, Section } from "@/lib/nda/types";
 
+const BLOB_URL_LIFETIME_MS = 60_000;
+
 export function DownloadPdfButton({ data, sections }: { data: NdaData; sections: Section[] }) {
   const [status, setStatus] = useState<"idle" | "generating" | "error">("idle");
 
@@ -11,19 +13,25 @@ export function DownloadPdfButton({ data, sections }: { data: NdaData; sections:
     setStatus("generating");
     try {
       // Load the PDF renderer on demand; it's large and only needed here.
-      const [{ pdf }, { NdaPdfDocument }] = await Promise.all([
+      const [{ pdf }, { NdaPdfDocument, registerPdfFonts }] = await Promise.all([
         import("@react-pdf/renderer"),
         import("./NdaPdfDocument"),
       ]);
+      registerPdfFonts("/fonts");
       const blob = await pdf(<NdaPdfDocument data={data} sections={sections} />).toBlob();
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = pdfFileName(data);
+      // Some browsers (e.g. Firefox) only download from links in the document.
+      link.style.display = "none";
+      document.body.appendChild(link);
       link.click();
-      // Revoke after the click has been handled so the download isn't cancelled.
-      setTimeout(() => URL.revokeObjectURL(url), 0);
+      link.remove();
+      // Safari and Firefox may read the blob after click() returns, so revoking
+      // immediately can cancel the download. Wait well past that before freeing it.
+      setTimeout(() => URL.revokeObjectURL(url), BLOB_URL_LIFETIME_MS);
       setStatus("idle");
     } catch (error) {
       console.error("Failed to generate PDF", error);

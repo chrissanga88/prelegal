@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseInline, parseStandardTerms } from "./standardTerms";
 
@@ -21,7 +21,7 @@ describe("parseInline", () => {
 
 describe("parseStandardTerms", () => {
   const markdown = readFileSync(
-    path.join(__dirname, "../../../templates/Mutual-NDA.md"),
+    fileURLToPath(new URL("../../../templates/Mutual-NDA.md", import.meta.url)),
     "utf-8",
   );
   const sections = parseStandardTerms(markdown);

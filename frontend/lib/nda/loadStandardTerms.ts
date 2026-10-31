@@ -1,15 +1,11 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { parseStandardTerms } from "./standardTerms";
+import { STANDARD_TERMS_MARKDOWN } from "./standardTermsSource.generated";
 
-/** Path to the repository's shared templates directory. */
-const TEMPLATES_DIR = path.join(process.cwd(), "..", "templates");
-
-/** Reads and parses the Mutual NDA Standard Terms. Server-only. */
+/**
+ * Parses the Mutual NDA Standard Terms. The markdown is bundled from
+ * standardTermsSource.generated.ts (see scripts/sync-standard-terms.mjs),
+ * so this works regardless of the working directory or deploy layout.
+ */
 export function loadStandardTerms() {
-  const markdown = readFileSync(
-    path.join(TEMPLATES_DIR, "Mutual-NDA.md"),
-    "utf-8",
-  );
-  return parseStandardTerms(markdown);
+  return parseStandardTerms(STANDARD_TERMS_MARKDOWN);
 }

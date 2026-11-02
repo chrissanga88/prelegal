@@ -42,13 +42,13 @@ export function DownloadPdfButton({ data, sections }: { data: NdaData; sections:
   return (
     <div className="flex items-center gap-3">
       {status === "error" && (
-        <span className="text-sm text-red-600">Couldn’t generate the PDF. Please try again.</span>
+        <span className="text-sm text-danger">Couldn’t generate the PDF. Please try again.</span>
       )}
       <button
         type="button"
         onClick={handleDownload}
         disabled={status === "generating"}
-        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:cursor-wait disabled:opacity-60"
+        className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:cursor-wait disabled:opacity-60"
       >
         {status === "generating" ? "Generating…" : "Download PDF"}
       </button>

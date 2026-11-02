@@ -9,7 +9,7 @@ import type { NdaData, Section, Segment } from "@/lib/nda/types";
 
 function Placeholder({ label }: { label: string }) {
   return (
-    <span className="rounded bg-amber-100 px-1 text-amber-800">[{label}]</span>
+    <span className="rounded bg-accent/20 px-1 text-navy">[{label}]</span>
   );
 }
 
@@ -27,7 +27,7 @@ function SegmentText({ segment }: { segment: Segment }) {
 /** HTML rendering of the completed Mutual NDA, updated live as the form changes. */
 export function NdaPreview({ data, sections }: { data: NdaData; sections: Section[] }) {
   return (
-    <article className="space-y-6 font-serif text-[13px] leading-relaxed text-zinc-900">
+    <article className="space-y-6 font-serif text-[13px] leading-relaxed text-navy">
       <header className="space-y-3">
         <h1 className="text-center text-xl font-bold">Mutual Non-Disclosure Agreement</h1>
         <p>{COVER_PAGE_INTRO}</p>
@@ -52,17 +52,17 @@ export function NdaPreview({ data, sections }: { data: NdaData; sections: Sectio
         <table className="w-full border-collapse text-left">
           <thead>
             <tr>
-              <th className="w-1/4 border border-zinc-300 p-2" />
-              <th className="border border-zinc-300 p-2 text-center">PARTY 1</th>
-              <th className="border border-zinc-300 p-2 text-center">PARTY 2</th>
+              <th className="w-1/4 border border-line p-2" />
+              <th className="border border-line p-2 text-center">PARTY 1</th>
+              <th className="border border-line p-2 text-center">PARTY 2</th>
             </tr>
           </thead>
           <tbody>
             {partyRows.map(({ label, field }) => (
               <tr key={label}>
-                <th className="border border-zinc-300 p-2 font-semibold">{label}</th>
+                <th className="border border-line p-2 font-semibold">{label}</th>
                 {data.parties.map((party, i) => (
-                  <td key={i} className="h-10 border border-zinc-300 p-2 align-top">
+                  <td key={i} className="h-10 border border-line p-2 align-top">
                     {field && party[field]}
                   </td>
                 ))}
@@ -72,7 +72,7 @@ export function NdaPreview({ data, sections }: { data: NdaData; sections: Sectio
         </table>
       </section>
 
-      <section className="space-y-3 border-t border-zinc-300 pt-6">
+      <section className="space-y-3 border-t border-line pt-6">
         <h2 className="text-center text-lg font-bold">Standard Terms</h2>
         <ol className="space-y-3">
           {sections.map((section) => (
@@ -86,7 +86,7 @@ export function NdaPreview({ data, sections }: { data: NdaData; sections: Sectio
         </ol>
       </section>
 
-      <footer className="text-xs text-zinc-500">{ATTRIBUTION}</footer>
+      <footer className="text-xs text-muted">{ATTRIBUTION}</footer>
     </article>
   );
 }

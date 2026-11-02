@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.config import Settings
-from app.db import connect, reset_db
+from app.db import open_db, reset_db
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -18,15 +18,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         yield
 
     app = FastAPI(title="Prelegal", lifespan=lifespan)
-    app.state.settings = settings
 
     @app.get("/api/health")
     def health() -> dict[str, str]:
-        connection = connect(settings.db_path)
-        try:
+        with open_db(settings.db_path) as connection:
             connection.execute("SELECT 1")
-        finally:
-            connection.close()
         return {"status": "ok"}
 
     # Mounted last: a mount at "/" matches every path, so API routes must come first.

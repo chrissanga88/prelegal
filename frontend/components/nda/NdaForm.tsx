@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { MAX_TERM_YEARS, MIN_TERM_YEARS, parseTermYears } from "@/lib/nda/coverPage";
 import type { NdaData, Party } from "@/lib/nda/types";
+import { inputClass } from "@/components/ui/styles";
 
 /** Party fields appear in a non-breaking signature table in the PDF, so keep them short. */
 const PARTY_FIELD_MAX_LENGTH = 200;
@@ -12,8 +13,6 @@ type Props = {
   onChange: (data: NdaData) => void;
 };
 
-const inputClass =
-  "w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-navy shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (

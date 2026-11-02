@@ -9,7 +9,10 @@ docker build -t $Name .
 if ($LASTEXITCODE -ne 0) { throw "docker build failed" }
 
 # Remove any previous container so the database always starts fresh.
-docker rm -f $Name 2>$null | Out-Null
+if (docker ps -aq --filter "name=^$Name$") {
+    docker rm -f $Name | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "docker rm failed" }
+}
 
 $envArgs = @()
 if (Test-Path ".env") { $envArgs = @("--env-file", ".env") }

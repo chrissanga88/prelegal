@@ -18,12 +18,12 @@ export function NdaCreator({ sections }: { sections: Section[] }) {
 
       <section aria-label="Document preview" className="lg:sticky lg:top-6 lg:self-start">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
             Preview
           </h2>
           <DownloadPdfButton data={data} sections={sections} />
         </div>
-        <div className="max-h-[calc(100vh-8rem)] overflow-y-auto rounded-lg border border-zinc-200 bg-white p-10 shadow-sm">
+        <div className="max-h-[calc(100vh-8rem)] overflow-y-auto rounded-lg border border-line bg-white p-10 shadow-sm">
           <NdaPreview data={data} sections={sections} />
         </div>
       </section>

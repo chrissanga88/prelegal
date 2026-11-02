@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { MAX_TERM_YEARS, MIN_TERM_YEARS, parseTermYears } from "@/lib/nda/coverPage";
 import type { NdaData, Party } from "@/lib/nda/types";
+import { inputClass } from "@/components/ui/styles";
 
 /** Party fields appear in a non-breaking signature table in the PDF, so keep them short. */
 const PARTY_FIELD_MAX_LENGTH = 200;
@@ -12,14 +13,12 @@ type Props = {
   onChange: (data: NdaData) => void;
 };
 
-const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-sm font-medium text-zinc-800">{label}</span>
-      {hint && <span className="block text-xs text-zinc-500">{hint}</span>}
+      <span className="text-sm font-medium text-navy">{label}</span>
+      {hint && <span className="block text-xs text-muted">{hint}</span>}
       {children}
     </label>
   );
@@ -27,8 +26,8 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 function Fieldset({ legend, children }: { legend: string; children: ReactNode }) {
   return (
-    <fieldset className="space-y-4 rounded-lg border border-zinc-200 bg-white p-5">
-      <legend className="px-1 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+    <fieldset className="space-y-4 rounded-lg border border-line bg-white p-5">
+      <legend className="px-1 text-sm font-semibold uppercase tracking-wide text-muted">
         {legend}
       </legend>
       {children}
@@ -67,7 +66,7 @@ function YearsInput({
       maxLength={2}
       aria-label={`${label} (${MIN_TERM_YEARS}–${MAX_TERM_YEARS})`}
       aria-invalid={invalid}
-      className={`${inputClass} w-20 ${invalid ? "border-red-500" : ""}`}
+      className={`${inputClass} w-20 ${invalid ? "border-danger" : ""}`}
       value={text}
       disabled={disabled}
       onChange={(e) => {
@@ -127,9 +126,9 @@ export function NdaForm({ data, onChange }: Props) {
         </Field>
 
         <div className="space-y-2">
-          <span className="text-sm font-medium text-zinc-800">MNDA Term</span>
-          <span className="block text-xs text-zinc-500">The length of this MNDA</span>
-          <label className="flex items-center gap-2 text-sm text-zinc-700">
+          <span className="text-sm font-medium text-navy">MNDA Term</span>
+          <span className="block text-xs text-muted">The length of this MNDA</span>
+          <label className="flex items-center gap-2 text-sm text-navy">
             <input
               type="radio"
               name="mndaTerm"
@@ -145,7 +144,7 @@ export function NdaForm({ data, onChange }: Props) {
             />
             year(s) from Effective Date
           </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-700">
+          <label className="flex items-center gap-2 text-sm text-navy">
             <input
               type="radio"
               name="mndaTerm"
@@ -160,11 +159,11 @@ export function NdaForm({ data, onChange }: Props) {
         </div>
 
         <div className="space-y-2">
-          <span className="text-sm font-medium text-zinc-800">Term of Confidentiality</span>
-          <span className="block text-xs text-zinc-500">
+          <span className="text-sm font-medium text-navy">Term of Confidentiality</span>
+          <span className="block text-xs text-muted">
             How long Confidential Information is protected
           </span>
-          <label className="flex items-center gap-2 text-sm text-zinc-700">
+          <label className="flex items-center gap-2 text-sm text-navy">
             <input
               type="radio"
               name="confidentialityTerm"
@@ -181,7 +180,7 @@ export function NdaForm({ data, onChange }: Props) {
             />
             year(s) from Effective Date
           </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-700">
+          <label className="flex items-center gap-2 text-sm text-navy">
             <input
               type="radio"
               name="confidentialityTerm"

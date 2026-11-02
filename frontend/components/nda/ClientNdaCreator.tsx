@@ -10,6 +10,6 @@ export const ClientNdaCreator = dynamic(
   () => import("./NdaCreator").then((mod) => mod.NdaCreator),
   {
     ssr: false,
-    loading: () => <p className="text-sm text-zinc-500">Loading the NDA creator…</p>,
+    loading: () => <p className="text-sm text-muted">Loading the NDA creator…</p>,
   },
 );

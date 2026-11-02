@@ -1,26 +1,22 @@
-import { ClientNdaCreator } from "@/components/nda/ClientNdaCreator";
-import { loadStandardTerms } from "@/lib/nda/loadStandardTerms";
+import type { Metadata } from "next";
+import { LoginForm } from "@/components/auth/LoginForm";
 
-const sections = loadStandardTerms();
+// The layout's title template only applies to child segments, so spell out the full title here.
+export const metadata: Metadata = { title: { absolute: "Sign in | Prelegal" } };
 
-export default function Home() {
+export default function LoginPage() {
   return (
-    <div className="flex flex-1 flex-col bg-zinc-50">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-5">
-          <p className="text-sm font-semibold text-indigo-600">Prelegal</p>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
-            Mutual NDA Creator
-          </h1>
-          <p className="mt-1 text-sm text-zinc-600">
-            Fill in the key details and download a completed Common Paper Mutual
-            Non-Disclosure Agreement.
-          </p>
+    <main className="flex flex-1 items-center justify-center px-6 py-12">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <p className="text-sm font-semibold uppercase tracking-wide text-primary">Prelegal</p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-navy">Sign in</h1>
+          <p className="mt-1 text-sm text-navy/70">Draft common legal agreements in minutes.</p>
         </div>
-      </header>
-      <main className="mx-auto flex w-full max-w-7xl flex-1 px-6 py-8">
-        <ClientNdaCreator sections={sections} />
-      </main>
-    </div>
+        <div className="rounded-lg border border-t-4 border-line border-t-accent bg-white p-8 shadow-sm">
+          <LoginForm />
+        </div>
+      </div>
+    </main>
   );
 }

@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Prelegal API and static frontend server"
 requires-python = ">=3.13"
 dependencies = [
+    "anthropic>=2.3.0",
     "fastapi>=0.115",
+    "pydantic>=2.14.2",
+    "python-dotenv>=1.2.4",
     "uvicorn[standard]>=0.32",
 ]
 

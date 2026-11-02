@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createDefaultNda, todayIso } from "@/lib/nda/coverPage";
 import type { Section } from "@/lib/nda/types";
 import { DownloadPdfButton } from "./DownloadPdfButton";
-import { NdaForm } from "./NdaForm";
+import { NdaChat } from "./NdaChat";
 import { NdaPreview } from "./NdaPreview";
 
 export function NdaCreator({ sections }: { sections: Section[] }) {
@@ -12,8 +12,8 @@ export function NdaCreator({ sections }: { sections: Section[] }) {
 
   return (
     <div className="grid flex-1 gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-      <section aria-label="Agreement details">
-        <NdaForm data={data} onChange={setData} />
+      <section aria-label="Chat with the AI assistant">
+        <NdaChat data={data} onChange={setData} />
       </section>
 
       <section aria-label="Document preview" className="lg:sticky lg:top-6 lg:self-start">

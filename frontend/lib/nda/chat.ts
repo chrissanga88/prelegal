@@ -43,7 +43,7 @@ export async function sendChatTurn(
     const detail = body?.detail;
     throw new Error(typeof detail === "string" ? detail : GENERIC_ERROR);
   }
-  if (typeof body?.reply !== "string" || typeof body?.fields !== "object") {
+  if (typeof body?.reply !== "string" || typeof body?.fields !== "object" || !body.fields) {
     throw new Error(GENERIC_ERROR);
   }
   return body as ChatTurnResult;

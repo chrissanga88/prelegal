@@ -15,10 +15,11 @@ Two field shapes are used:
 
 import json
 from datetime import date
+from collections.abc import Callable
 from typing import Annotated, Literal
 
 from anthropic import Anthropic
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 from pydantic.alias_generators import to_camel
 
 MODEL = "claude-haiku-5-5"
@@ -89,7 +90,10 @@ class NdaFields(CamelModel):
 
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant"]
-    content: Annotated[str, Field(min_length=1, max_length=MAX_MESSAGE_LENGTH)]
+    # Stripped first: the Messages API rejects whitespace-only text.
+    content: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_MESSAGE_LENGTH)
+    ]
 
 
 class ChatRequest(BaseModel):
@@ -171,8 +175,15 @@ def _clip(text: str, max_length: int) -> str:
     return text.strip()[:max_length]
 
 
-def _is_valid_term(years: int | None) -> bool:
-    return years is None or MIN_TERM_YEARS <= years <= MAX_TERM_YEARS
+def _pick_term[T: BaseModel](
+    years: int | None, open_ended: T, with_years: Callable[[int], T], previous: T
+) -> T:
+    """``None`` means open-ended; a term outside 1-99 years keeps the previous value."""
+    if years is None:
+        return open_ended
+    if MIN_TERM_YEARS <= years <= MAX_TERM_YEARS:
+        return with_years(years)
+    return previous
 
 
 def _is_iso_date(text: str) -> bool:
@@ -197,23 +208,18 @@ def from_llm_fields(llm: LlmNdaFields, previous: NdaFields) -> NdaFields:
     Values the document can't represent (a term outside 1-99 years, a malformed
     date) are dropped in favour of the previous value rather than failing the turn.
     """
-    if _is_valid_term(llm.mnda_term_years):
-        mnda_term = (
-            UntilTerminatedTerm(kind="untilTerminated")
-            if llm.mnda_term_years is None
-            else ExpiresTerm(kind="expires", years=llm.mnda_term_years)
-        )
-    else:
-        mnda_term = previous.mnda_term
-
-    if _is_valid_term(llm.confidentiality_term_years):
-        confidentiality_term = (
-            PerpetualTerm(kind="perpetual")
-            if llm.confidentiality_term_years is None
-            else YearsTerm(kind="years", years=llm.confidentiality_term_years)
-        )
-    else:
-        confidentiality_term = previous.confidentiality_term
+    mnda_term = _pick_term(
+        llm.mnda_term_years,
+        UntilTerminatedTerm(kind="untilTerminated"),
+        lambda years: ExpiresTerm(kind="expires", years=years),
+        previous.mnda_term,
+    )
+    confidentiality_term = _pick_term(
+        llm.confidentiality_term_years,
+        PerpetualTerm(kind="perpetual"),
+        lambda years: YearsTerm(kind="years", years=years),
+        previous.confidentiality_term,
+    )
 
     effective_date = llm.effective_date.strip()
     return NdaFields(
@@ -292,6 +298,7 @@ def run_chat_turn(
         output_format=ChatTurn,
     )
     turn = response.parsed_output
-    if response.stop_reason in ("refusal", "max_tokens") or turn is None or not turn.reply.strip():
+    reply = turn.reply.strip() if turn else ""
+    if response.stop_reason in ("refusal", "max_tokens") or not reply:
         raise ChatError(f"unusable model response (stop_reason={response.stop_reason})")
-    return ChatResponse(reply=turn.reply.strip(), fields=from_llm_fields(turn.fields, fields))
+    return ChatResponse(reply=reply, fields=from_llm_fields(turn.fields, fields))

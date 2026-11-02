@@ -70,6 +70,9 @@ describe("sendChatTurn", () => {
   it("rejects a malformed success response", async () => {
     mockFetch(() => jsonResponse({ unexpected: true }));
     await expect(sendChatTurn(hello, fields)).rejects.toThrow("Something went wrong");
+
+    mockFetch(() => jsonResponse({ reply: "Hi", fields: null }));
+    await expect(sendChatTurn(hello, fields)).rejects.toThrow("Something went wrong");
   });
 
   it("reports network failures", async () => {

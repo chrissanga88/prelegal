@@ -49,16 +49,6 @@ export function formatDate(isoDate: string): string {
   return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 }
 
-export const MIN_TERM_YEARS = 1;
-export const MAX_TERM_YEARS = 99;
-
-/** Parses a term length typed by the user; null unless a whole number from 1 to 99. */
-export function parseTermYears(text: string): number | null {
-  if (!/^\d{1,2}$/.test(text.trim())) return null;
-  const years = Number(text);
-  return years >= MIN_TERM_YEARS && years <= MAX_TERM_YEARS ? years : null;
-}
-
 function pluralizeYears(years: number): string {
   return `${years} ${years === 1 ? "year" : "years"}`;
 }

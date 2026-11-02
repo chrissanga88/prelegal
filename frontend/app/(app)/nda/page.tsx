@@ -12,8 +12,8 @@ export default function NdaPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight text-navy">Mutual NDA Creator</h1>
         <p className="mt-1 text-sm text-navy/70">
-          Fill in the key details and download a completed Common Paper Mutual Non-Disclosure
-          Agreement.
+          Chat with the AI assistant to fill in your Common Paper Mutual Non-Disclosure Agreement,
+          then download the completed document.
         </p>
       </div>
       <ClientNdaCreator sections={sections} />

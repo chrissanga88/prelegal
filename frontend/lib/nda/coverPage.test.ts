@@ -5,7 +5,6 @@ import {
   describeConfidentialityTerm,
   describeMndaTerm,
   formatDate,
-  parseTermYears,
   pdfFileName,
   todayIso,
 } from "./coverPage";
@@ -33,20 +32,6 @@ describe("formatDate", () => {
 
   it("handles leap days", () => {
     expect(formatDate("2028-02-29")).toBe("February 29, 2028");
-  });
-});
-
-describe("parseTermYears", () => {
-  it("accepts whole numbers from 1 to 99", () => {
-    expect(parseTermYears("1")).toBe(1);
-    expect(parseTermYears("3")).toBe(3);
-    expect(parseTermYears("99")).toBe(99);
-  });
-
-  it("rejects empty, zero, fractional, exponent and out-of-range values", () => {
-    for (const text of ["", "0", "2.5", "1e3", "100", "-1", "abc"]) {
-      expect(parseTermYears(text)).toBeNull();
-    }
   });
 });
 

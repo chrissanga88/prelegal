@@ -17,16 +17,16 @@ def test_serves_login_page_at_root(client):
 
 
 def test_serves_nested_page(client):
-    response = client.get("/nda/")
+    response = client.get("/draft/")
     assert response.status_code == 200
-    assert "nda page" in response.text
+    assert "draft page" in response.text
 
 
 def test_redirects_to_trailing_slash(client):
-    response = client.get("/nda", follow_redirects=False)
+    response = client.get("/draft", follow_redirects=False)
     assert response.status_code in (307, 308)
-    assert response.headers["location"].endswith("/nda/")
-    assert "nda page" in client.get("/nda").text
+    assert response.headers["location"].endswith("/draft/")
+    assert "draft page" in client.get("/draft").text
 
 
 def test_unknown_path_serves_404_page(client):

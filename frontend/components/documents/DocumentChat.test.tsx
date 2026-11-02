@@ -3,19 +3,19 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createDefaultNda } from "@/lib/nda/coverPage";
-import type { NdaData } from "@/lib/nda/types";
-import { GREETING, NdaChat } from "./NdaChat";
+import { createEmptyDraft } from "@/lib/documents/draft";
+import type { DocumentDraft } from "@/lib/documents/types";
+import { DocumentChat, GREETING } from "./DocumentChat";
 
-const initialData = createDefaultNda("2026-11-02");
-let latest: NdaData;
+const initialData = createEmptyDraft();
+let latest: DocumentDraft;
 let fetchMock: ReturnType<typeof vi.fn>;
 
 function Harness() {
   const [data, setData] = useState(initialData);
   return (
-    <NdaChat
-      data={data}
+    <DocumentChat
+      draft={data}
       onChange={(next) => {
         latest = next;
         setData(next);
@@ -46,15 +46,15 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("NdaChat", () => {
+describe("DocumentChat", () => {
   it("opens with the greeting", () => {
     render(<Harness />);
     expect(screen.getByRole("log").textContent).toContain(GREETING);
   });
 
-  it("sends the message, shows the reply and updates the fields", async () => {
-    const updated = { ...initialData, governingLaw: "Delaware" };
-    fetchMock.mockResolvedValueOnce(reply({ reply: "Got it. Who is the other party?", fields: updated }));
+  it("sends the message, shows the reply and updates the draft", async () => {
+    const updated = { ...initialData, documentType: "mutual-nda", fields: { governing_law: "Delaware" } };
+    fetchMock.mockResolvedValueOnce(reply({ reply: "Got it. Who is the other party?", draft: updated }));
     const user = userEvent.setup();
     render(<Harness />);
 
@@ -68,15 +68,15 @@ describe("NdaChat", () => {
     // The greeting is display-only; the API conversation starts with the user.
     expect(sentBody(0)).toEqual({
       messages: [{ role: "user", content: "Use Delaware law" }],
-      fields: initialData,
+      draft: initialData,
     });
   });
 
-  it("sends the whole conversation and the latest fields on the next turn", async () => {
-    const updated = { ...initialData, governingLaw: "Delaware" };
+  it("sends the whole conversation and the latest draft on the next turn", async () => {
+    const updated = { ...initialData, documentType: "mutual-nda", fields: { governing_law: "Delaware" } };
     fetchMock
-      .mockResolvedValueOnce(reply({ reply: "First reply", fields: updated }))
-      .mockResolvedValueOnce(reply({ reply: "Second reply", fields: updated }));
+      .mockResolvedValueOnce(reply({ reply: "First reply", draft: updated }))
+      .mockResolvedValueOnce(reply({ reply: "Second reply", draft: updated }));
     const user = userEvent.setup();
     render(<Harness />);
 
@@ -91,7 +91,7 @@ describe("NdaChat", () => {
         { role: "assistant", content: "First reply" },
         { role: "user", content: "two" },
       ],
-      fields: updated,
+      draft: updated,
     });
   });
 
@@ -127,7 +127,7 @@ describe("NdaChat", () => {
     await user.type(screen.getByLabelText("Message"), "again{Enter}");
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    resolve(reply({ reply: "Hi there", fields: initialData }));
+    resolve(reply({ reply: "Hi there", draft: initialData }));
     await screen.findByText("Hi there");
     expect(screen.queryByText("Assistant is typing…")).toBeNull();
   });
@@ -144,7 +144,7 @@ describe("NdaChat", () => {
     expect(screen.getByRole("log").textContent).not.toContain("hello");
     expect(latest).toBe(initialData);
 
-    fetchMock.mockResolvedValueOnce(reply({ reply: "Back again", fields: initialData }));
+    fetchMock.mockResolvedValueOnce(reply({ reply: "Back again", draft: initialData }));
     await user.click(screen.getByRole("button", { name: "Send" }));
     await screen.findByText("Back again");
     expect(screen.queryByRole("alert")).toBeNull();

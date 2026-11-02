@@ -35,12 +35,12 @@ describe("LoginForm", () => {
     await user.click(screen.getByRole("button", { name: "Sign in" }));
 
     expect(readSession()).toEqual({ email: "ada@example.com" });
-    expect(replace).toHaveBeenCalledWith("/nda/");
+    expect(replace).toHaveBeenCalledWith("/draft/");
   });
 
   it("redirects a user who is already signed in", () => {
     signIn("ada@example.com", "secret");
     render(<LoginForm />);
-    expect(replace).toHaveBeenCalledWith("/nda/");
+    expect(replace).toHaveBeenCalledWith("/draft/");
   });
 });

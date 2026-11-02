@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { MAX_MESSAGE_LENGTH, sendChatTurn, type ChatMessage } from "@/lib/nda/chat";
-import type { NdaData } from "@/lib/nda/types";
+import { MAX_MESSAGE_LENGTH, sendChatTurn, type ChatMessage } from "@/lib/documents/chat";
+import type { DocumentDraft } from "@/lib/documents/types";
 import { inputClass } from "@/components/ui/styles";
 
 /**
@@ -11,11 +11,11 @@ import { inputClass } from "@/components/ui/styles";
  * it has already greeted the user.
  */
 export const GREETING =
-  "Hi! I’ll help you draft a Mutual Non-Disclosure Agreement. To start, what is the NDA for, and who is the other party?";
+  "Hi! I’ll help you draft a legal agreement, such as an NDA, a cloud service agreement or a data processing agreement. What would you like to create, and who is it with?";
 
 type Props = {
-  data: NdaData;
-  onChange: (data: NdaData) => void;
+  draft: DocumentDraft;
+  onChange: (draft: DocumentDraft) => void;
 };
 
 function Bubble({ message }: { message: ChatMessage }) {
@@ -34,10 +34,10 @@ function Bubble({ message }: { message: ChatMessage }) {
   );
 }
 
-/** Freeform chat with the AI, which fills in the NDA fields from the conversation. */
-export function NdaChat({ data, onChange }: Props) {
+/** Freeform chat with the AI, which picks the document and fills in its fields from the conversation. */
+export function DocumentChat({ draft, onChange }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [draft, setDraft] = useState("");
+  const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
@@ -49,22 +49,22 @@ export function NdaChat({ data, onChange }: Props) {
   }, [messages, pending, error]);
 
   async function send() {
-    const content = draft.trim();
+    const content = input.trim();
     if (!content || pending) return;
 
     const conversation: ChatMessage[] = [...messages, { role: "user", content }];
     setMessages(conversation);
-    setDraft("");
+    setInput("");
     setError(null);
     setPending(true);
     try {
-      const { reply, fields } = await sendChatTurn(conversation, data);
-      setMessages([...conversation, { role: "assistant", content: reply }]);
-      onChange(fields);
+      const result = await sendChatTurn(conversation, draft);
+      setMessages([...conversation, { role: "assistant", content: result.reply }]);
+      onChange(result.draft);
     } catch (err) {
       // Drop the unanswered message and give it back so the user can resend it.
       setMessages(messages);
-      setDraft(content);
+      setInput(content);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setPending(false);
@@ -113,13 +113,13 @@ export function NdaChat({ data, onChange }: Props) {
             maxLength={MAX_MESSAGE_LENGTH}
             placeholder="Type your answer… (Shift+Enter for a new line)"
             className={`${inputClass} resize-none`}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
           />
           <button
             type="submit"
-            disabled={pending || !draft.trim()}
+            disabled={pending || !input.trim()}
             className="rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-secondary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             Send

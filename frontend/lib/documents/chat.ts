@@ -1,8 +1,8 @@
-import type { NdaData } from "./types";
+import type { DocumentDraft } from "./types";
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
-export type ChatTurnResult = { reply: string; fields: NdaData };
+export type ChatTurnResult = { reply: string; draft: DocumentDraft };
 
 /** Matches the backend's per-message limit. */
 export const MAX_MESSAGE_LENGTH = 4000;
@@ -11,7 +11,7 @@ export const MAX_MESSAGE_LENGTH = 4000;
  * The backend accepts at most 60 messages per request. Long conversations send
  * only the most recent ones; the window is odd-sized so that, ending on the
  * user's message, it always starts with a user message too. Nothing is lost
- * from the document, since the current fields are sent on every turn.
+ * from the document, since the current draft is sent on every turn.
  */
 const MAX_HISTORY_MESSAGES = 59;
 
@@ -19,19 +19,19 @@ const GENERIC_ERROR = "Something went wrong. Please try again.";
 
 /**
  * Sends the conversation (ending with the user's latest message) and the
- * current fields to the AI, and returns its reply with the updated fields.
+ * current draft to the AI, and returns its reply with the updated draft.
  * Throws an Error whose message is safe to show to the user.
  */
 export async function sendChatTurn(
   messages: ChatMessage[],
-  fields: NdaData,
+  draft: DocumentDraft,
 ): Promise<ChatTurnResult> {
   let response: Response;
   try {
     response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: messages.slice(-MAX_HISTORY_MESSAGES), fields }),
+      body: JSON.stringify({ messages: messages.slice(-MAX_HISTORY_MESSAGES), draft }),
     });
   } catch {
     throw new Error("Couldn’t reach the server. Check your connection and try again.");
@@ -43,7 +43,7 @@ export async function sendChatTurn(
     const detail = body?.detail;
     throw new Error(typeof detail === "string" ? detail : GENERIC_ERROR);
   }
-  if (typeof body?.reply !== "string" || typeof body?.fields !== "object" || !body.fields) {
+  if (typeof body?.reply !== "string" || typeof body?.draft !== "object" || !body.draft) {
     throw new Error(GENERIC_ERROR);
   }
   return body as ChatTurnResult;

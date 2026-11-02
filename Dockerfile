@@ -19,6 +19,8 @@ WORKDIR /app/backend
 COPY backend/pyproject.toml backend/uv.lock backend/.python-version ./
 RUN uv sync --frozen --no-dev
 COPY backend/app ./app
+# Document specs, read by app/config.py from the project root (/app here).
+COPY documents.json /app/documents.json
 COPY --from=frontend /frontend/out /app/static
 
 RUN useradd --system --uid 10001 app && mkdir -p /app/data && chown app /app/data

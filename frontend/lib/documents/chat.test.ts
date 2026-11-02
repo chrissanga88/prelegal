@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createDefaultNda } from "./coverPage";
+import { createEmptyDraft } from "./draft";
 import { sendChatTurn, type ChatMessage } from "./chat";
 
-const fields = createDefaultNda("2026-11-02");
+const draft = createEmptyDraft();
 const hello: ChatMessage[] = [{ role: "user", content: "Hello" }];
 
 function mockFetch(impl: () => Promise<Response>) {
@@ -25,27 +25,27 @@ afterEach(() => {
 });
 
 describe("sendChatTurn", () => {
-  it("posts the messages and fields and returns the reply", async () => {
-    const updated = { ...fields, governingLaw: "Delaware" };
-    const fetchMock = mockFetch(() => jsonResponse({ reply: "Noted.", fields: updated }));
+  it("posts the messages and draft and returns the reply", async () => {
+    const updated = { ...draft, documentType: "mutual-nda", fields: { governing_law: "Delaware" } };
+    const fetchMock = mockFetch(() => jsonResponse({ reply: "Noted.", draft: updated }));
 
-    const result = await sendChatTurn(hello, fields);
+    const result = await sendChatTurn(hello, draft);
 
-    expect(result).toEqual({ reply: "Noted.", fields: updated });
+    expect(result).toEqual({ reply: "Noted.", draft: updated });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/chat");
     expect(init.method).toBe("POST");
-    expect(JSON.parse(init.body as string)).toEqual({ messages: hello, fields });
+    expect(JSON.parse(init.body as string)).toEqual({ messages: hello, draft });
   });
 
   it("sends only a recent window of a long conversation, starting with the user", async () => {
-    const fetchMock = mockFetch(() => jsonResponse({ reply: "ok", fields }));
+    const fetchMock = mockFetch(() => jsonResponse({ reply: "ok", draft }));
     const long: ChatMessage[] = Array.from({ length: 81 }, (_, i) => ({
       role: i % 2 === 0 ? "user" : "assistant",
       content: `m${i}`,
     }));
 
-    await sendChatTurn(long, fields);
+    await sendChatTurn(long, draft);
 
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     const sent: ChatMessage[] = JSON.parse(init.body as string).messages;
@@ -56,27 +56,27 @@ describe("sendChatTurn", () => {
 
   it("surfaces the server's error message", async () => {
     mockFetch(() => jsonResponse({ detail: "The AI assistant is unavailable." }, 502));
-    await expect(sendChatTurn(hello, fields)).rejects.toThrow("The AI assistant is unavailable.");
+    await expect(sendChatTurn(hello, draft)).rejects.toThrow("The AI assistant is unavailable.");
   });
 
   it("uses a generic message for validation errors and non-JSON responses", async () => {
     mockFetch(() => jsonResponse({ detail: [{ msg: "field required" }] }, 422));
-    await expect(sendChatTurn(hello, fields)).rejects.toThrow("Something went wrong");
+    await expect(sendChatTurn(hello, draft)).rejects.toThrow("Something went wrong");
 
     mockFetch(() => Promise.resolve(new Response("<html>oops</html>", { status: 500 })));
-    await expect(sendChatTurn(hello, fields)).rejects.toThrow("Something went wrong");
+    await expect(sendChatTurn(hello, draft)).rejects.toThrow("Something went wrong");
   });
 
   it("rejects a malformed success response", async () => {
     mockFetch(() => jsonResponse({ unexpected: true }));
-    await expect(sendChatTurn(hello, fields)).rejects.toThrow("Something went wrong");
+    await expect(sendChatTurn(hello, draft)).rejects.toThrow("Something went wrong");
 
-    mockFetch(() => jsonResponse({ reply: "Hi", fields: null }));
-    await expect(sendChatTurn(hello, fields)).rejects.toThrow("Something went wrong");
+    mockFetch(() => jsonResponse({ reply: "Hi", draft: null }));
+    await expect(sendChatTurn(hello, draft)).rejects.toThrow("Something went wrong");
   });
 
   it("reports network failures", async () => {
     mockFetch(() => Promise.reject(new TypeError("Failed to fetch")));
-    await expect(sendChatTurn(hello, fields)).rejects.toThrow("Couldn’t reach the server");
+    await expect(sendChatTurn(hello, draft)).rejects.toThrow("Couldn’t reach the server");
   });
 });

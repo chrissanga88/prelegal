@@ -23,7 +23,8 @@ def test_every_document_has_a_template_and_fields():
 
 
 def test_every_catalog_template_is_supported():
-    """Every template in catalog.json can be drafted (the NDA cover page is built in)."""
+    """Every template in catalog.json can be drafted. documents.json folds the NDA
+    cover page template into the Mutual NDA entry, whose cover page is generated."""
     catalog = json.loads((ROOT / "catalog.json").read_text("utf-8"))
     supported = {spec.template for spec in load_documents(DEFAULT_DOCUMENTS_PATH).values()}
     expected = {entry["filename"] for entry in catalog} - {"templates/Mutual-NDA-coverpage.md"}

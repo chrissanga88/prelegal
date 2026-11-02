@@ -65,7 +65,7 @@ def create_app(settings: Settings | None = None, llm_client: Anthropic | None = 
             raise HTTPException(status_code=502, detail=CHAT_UNAVAILABLE)
 
     # Mounted last: a mount at "/" matches every path, so API routes must come first.
-    # html=True serves index.html for directories (e.g. /nda/) and 404.html for misses.
+    # html=True serves index.html for directories (e.g. /draft/) and 404.html for misses.
     if settings.static_dir and settings.static_dir.is_dir():
         app.mount("/", StaticFiles(directory=settings.static_dir, html=True), name="frontend")
 

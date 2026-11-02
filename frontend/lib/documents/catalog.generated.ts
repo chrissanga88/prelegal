@@ -115,6 +115,18 @@ export const DOCUMENTS: DocumentSpec[] = [
         "default": "The fees paid or payable by Customer in the 12 months before the claim"
       },
       {
+        "key": "provider_covered_claims",
+        "label": "Provider Covered Claims",
+        "kind": "longtext",
+        "description": "Third-party claims Provider will defend Customer against (indemnification scope)"
+      },
+      {
+        "key": "customer_covered_claims",
+        "label": "Customer Covered Claims",
+        "kind": "longtext",
+        "description": "Third-party claims Customer will defend Provider against (indemnification scope)"
+      },
+      {
         "key": "governing_law",
         "label": "Governing Law",
         "description": "The US state whose laws govern the agreement, e.g. Delaware"
@@ -388,9 +400,48 @@ export const DOCUMENTS: DocumentSpec[] = [
         "description": "Guidelines for using each other's trademarks"
       },
       {
+        "key": "additional_warranties",
+        "label": "Additional Warranties",
+        "kind": "longtext",
+        "description": "Any warranties beyond the Standard Terms",
+        "default": "None"
+      },
+      {
         "key": "general_cap_amount",
         "label": "General Cap Amount",
         "description": "Cap on each party's liability"
+      },
+      {
+        "key": "increased_cap_amount",
+        "label": "Increased Cap Amount",
+        "description": "Higher liability cap that applies to Increased Claims, if any",
+        "default": "None"
+      },
+      {
+        "key": "increased_claims",
+        "label": "Increased Claims",
+        "kind": "longtext",
+        "description": "Claims subject to the Increased Cap Amount, if any",
+        "default": "None"
+      },
+      {
+        "key": "unlimited_claims",
+        "label": "Unlimited Claims",
+        "kind": "longtext",
+        "description": "Claims with no liability cap, if any",
+        "default": "None"
+      },
+      {
+        "key": "company_covered_claims",
+        "label": "Company Covered Claims",
+        "kind": "longtext",
+        "description": "Third-party claims Company will defend Partner against (indemnification scope)"
+      },
+      {
+        "key": "partner_covered_claims",
+        "label": "Partner Covered Claims",
+        "kind": "longtext",
+        "description": "Third-party claims Partner will defend Company against (indemnification scope)"
       },
       {
         "key": "governing_law",
@@ -484,6 +535,27 @@ export const DOCUMENTS: DocumentSpec[] = [
         "description": "What the Provider will deliver"
       },
       {
+        "key": "customer_obligations",
+        "label": "Customer Obligations",
+        "kind": "longtext",
+        "description": "What the Customer must provide or do so the Provider can perform the services"
+      },
+      {
+        "key": "rejection_period",
+        "label": "Rejection Period",
+        "description": "How long the Customer has to reject a deliverable"
+      },
+      {
+        "key": "resubmission_period",
+        "label": "Resubmission Period",
+        "description": "How long the Provider has to fix and resubmit a rejected deliverable"
+      },
+      {
+        "key": "time_of_assignment",
+        "label": "Time of Assignment",
+        "description": "When ownership of deliverables passes to the Customer, e.g. upon payment"
+      },
+      {
         "key": "fees",
         "label": "Fees",
         "kind": "longtext",
@@ -501,9 +573,69 @@ export const DOCUMENTS: DocumentSpec[] = [
         "description": "How long the statement of work lasts"
       },
       {
+        "key": "customer_policies",
+        "label": "Customer Policies",
+        "kind": "longtext",
+        "description": "Customer policies the Provider must follow when performing the services",
+        "default": "None"
+      },
+      {
+        "key": "security_policy",
+        "label": "Security Policy",
+        "kind": "longtext",
+        "description": "Security requirements the Provider must follow",
+        "default": "None"
+      },
+      {
+        "key": "insurance_minimums",
+        "label": "Insurance Minimums",
+        "kind": "longtext",
+        "description": "Insurance coverage the Provider must carry",
+        "default": "None"
+      },
+      {
+        "key": "additional_warranties",
+        "label": "Additional Warranties",
+        "kind": "longtext",
+        "description": "Any warranties beyond the Standard Terms",
+        "default": "None"
+      },
+      {
         "key": "general_cap_amount",
         "label": "General Cap Amount",
         "description": "Cap on each party's liability"
+      },
+      {
+        "key": "increased_cap_amount",
+        "label": "Increased Cap Amount",
+        "description": "Higher liability cap that applies to Increased Claims, if any",
+        "default": "None"
+      },
+      {
+        "key": "increased_claims",
+        "label": "Increased Claims",
+        "kind": "longtext",
+        "description": "Claims subject to the Increased Cap Amount, if any",
+        "default": "None"
+      },
+      {
+        "key": "unlimited_claims",
+        "label": "Unlimited Claims",
+        "kind": "longtext",
+        "description": "Claims with no liability cap, if any",
+        "default": "None"
+      },
+      {
+        "key": "provider_covered_claims",
+        "label": "Provider Covered Claims",
+        "kind": "longtext",
+        "description": "Third-party claims Provider will defend Customer against (indemnification scope)"
+      },
+      {
+        "key": "customer_covered_claims",
+        "label": "Customer Covered Claims",
+        "kind": "longtext",
+        "description": "Third-party claims Customer will defend Provider against (indemnification scope)"
       },
       {
         "key": "governing_law",
@@ -609,6 +741,12 @@ export const DOCUMENTS: DocumentSpec[] = [
         "description": "Limits such as number of users or installations"
       },
       {
+        "key": "deletion_procedure",
+        "label": "Deletion Procedure",
+        "kind": "longtext",
+        "description": "How the Customer deletes the software when the license ends"
+      },
+      {
         "key": "fees",
         "label": "Fees",
         "kind": "longtext",
@@ -621,9 +759,48 @@ export const DOCUMENTS: DocumentSpec[] = [
         "default": "90 days"
       },
       {
+        "key": "additional_warranties",
+        "label": "Additional Warranties",
+        "kind": "longtext",
+        "description": "Any warranties beyond the Standard Terms",
+        "default": "None"
+      },
+      {
         "key": "general_cap_amount",
         "label": "General Cap Amount",
         "description": "Cap on each party's liability"
+      },
+      {
+        "key": "increased_cap_amount",
+        "label": "Increased Cap Amount",
+        "description": "Higher liability cap that applies to Increased Claims, if any",
+        "default": "None"
+      },
+      {
+        "key": "increased_claims",
+        "label": "Increased Claims",
+        "kind": "longtext",
+        "description": "Claims subject to the Increased Cap Amount, if any",
+        "default": "None"
+      },
+      {
+        "key": "unlimited_claims",
+        "label": "Unlimited Claims",
+        "kind": "longtext",
+        "description": "Claims with no liability cap, if any",
+        "default": "None"
+      },
+      {
+        "key": "provider_covered_claims",
+        "label": "Provider Covered Claims",
+        "kind": "longtext",
+        "description": "Third-party claims Provider will defend Customer against (indemnification scope)"
+      },
+      {
+        "key": "customer_covered_claims",
+        "label": "Customer Covered Claims",
+        "kind": "longtext",
+        "description": "Third-party claims Customer will defend Provider against (indemnification scope)"
       },
       {
         "key": "governing_law",

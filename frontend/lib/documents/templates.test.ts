@@ -87,6 +87,26 @@ describe("parseTemplate", () => {
     expect(clauses[1].segments).toEqual([{ type: "text", text: "Sub one" }]);
   });
 
+  it("accepts roman numeral markers and caps the depth", () => {
+    const clauses = parseTemplate(
+      ["1. Top", "    1. Sub", "        a. Deep", "            ii. Deeper", "                1. Deepest"].join("\n"),
+    );
+    expect(clauses.map(({ depth, label }) => [depth, label])).toEqual([
+      [0, "1."],
+      [1, "1.1"],
+      [2, "(a)"],
+      [3, "(ii)"],
+      [3, "(1)"],
+    ]);
+  });
+
+  it("keeps every roman-numeral item of the DPA", () => {
+    const labels = parseTemplate(readTemplate("templates/DPA.md")).map((c) => c.label);
+    for (const numeral of ["i", "ii", "iii", "iv", "v", "vi", "vii"]) {
+      expect(labels).toContain(`(${numeral})`);
+    }
+  });
+
   it("parses all eleven sections of the Mutual NDA", () => {
     const clauses = parseTemplate(readTemplate("templates/Mutual-NDA.md"));
     expect(clauses.map((c) => c.label)).toEqual(

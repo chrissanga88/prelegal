@@ -8,7 +8,7 @@ import {
 } from "@/lib/documents/draft";
 import type { DocumentDraft, DocumentSpec, Segment } from "@/lib/documents/types";
 
-/** Indentation per clause depth (Tailwind needs literal class names). */
+/** Indentation per clause depth, 0 to MAX_DEPTH (Tailwind needs literal class names). */
 const DEPTH_INDENT = ["", "pl-6", "pl-12", "pl-16"];
 
 function Placeholder({ label }: { label: string }) {
@@ -75,7 +75,7 @@ export function DocumentPreview({ spec, draft }: { spec: DocumentSpec; draft: Do
       <section className="space-y-2 border-t border-line pt-6">
         <h2 className="text-center text-lg font-bold">Standard Terms</h2>
         {loadStandardTerms(spec).map((clause, i) => (
-          <p key={i} className={DEPTH_INDENT[Math.min(clause.depth, DEPTH_INDENT.length - 1)]}>
+          <p key={i} className={DEPTH_INDENT[clause.depth]}>
             {clause.label}{" "}
             {clause.segments.map((segment, j) => (
               <SegmentText key={j} segment={segment} />

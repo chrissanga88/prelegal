@@ -1,7 +1,11 @@
 import type { Clause, Segment } from "./types";
 
-// A numbered list item: indentation (4 spaces per level), marker ("1" or "a"), text.
-const CLAUSE_PATTERN = /^( *)(\d+|[a-z])\.\s+(.*)$/;
+// A numbered list item: indentation (4 spaces per level), marker ("1", "a" or a
+// roman numeral such as "vii"), text.
+const CLAUSE_PATTERN = /^( *)(\d+|[a-z]+)\.\s+(.*)$/;
+
+/** Deeper clauses are rendered at this depth (the templates go no deeper). */
+export const MAX_DEPTH = 3;
 
 // Spans that only carry an anchor id (`<span id="13.29">**"Software"**</span>`
 // or an empty `<span id="4.7"></span>`); only their content is kept.
@@ -55,7 +59,7 @@ export function parseTemplate(markdown: string): Clause[] {
     const match = CLAUSE_PATTERN.exec(line.trimEnd());
     if (!match) continue;
     const [, indent, marker, text] = match;
-    const depth = Math.floor(indent.length / 4);
+    const depth = Math.min(Math.floor(indent.length / 4), MAX_DEPTH);
     if (depth === 0) section = marker;
     const label = depth === 0 ? `${marker}.` : depth === 1 ? `${section}.${marker}` : `(${marker})`;
     clauses.push({ depth, label, segments: parseInline(text) });

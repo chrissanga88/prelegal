@@ -26,7 +26,7 @@ describe("LoginForm", () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("signs in with any email and password and opens the NDA creator", async () => {
+  it("signs in with any email and password and opens the document creator", async () => {
     const user = userEvent.setup();
     render(<LoginForm />);
 

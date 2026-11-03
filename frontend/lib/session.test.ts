@@ -1,77 +1,92 @@
 // @vitest-environment jsdom
-import { act, cleanup, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { readSession, signIn, signOut, useSession } from "./session";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { apiRequest } from "./api";
+import { resetSessionForTests, signIn, signOut, signUp, useSession } from "./session";
+import { mockApi } from "./testing/mockApi";
 
-const KEY = "prelegal.session";
+const ADA = { email: "ada@example.com" };
 
-beforeEach(() => localStorage.clear());
-afterEach(cleanup);
-
-describe("signIn", () => {
-  it("accepts any non-empty email and password", () => {
-    expect(signIn("  ada@example.com ", "secret")).toEqual({ email: "ada@example.com" });
-    expect(readSession()).toEqual({ email: "ada@example.com" });
-  });
-
-  it.each([
-    ["", "secret"],
-    ["   ", "secret"],
-    ["ada@example.com", ""],
-    ["ada@example.com", "   "],
-  ])("rejects email %j with password %j", (email, password) => {
-    expect(signIn(email, password)).toBeNull();
-    expect(readSession()).toBeNull();
-  });
-
-  it("never stores the password", () => {
-    signIn("ada@example.com", "hunter2");
-    expect(localStorage.getItem(KEY)).not.toContain("hunter2");
-  });
-});
-
-describe("readSession", () => {
-  it.each(["not json", "null", "{}", '{"email":42}', '{"email":"  "}'])(
-    "treats %j as signed out",
-    (raw) => {
-      localStorage.setItem(KEY, raw);
-      expect(readSession()).toBeNull();
-    },
-  );
-});
-
-describe("signOut", () => {
-  it("clears the session", () => {
-    signIn("ada@example.com", "secret");
-    signOut();
-    expect(readSession()).toBeNull();
-  });
+beforeEach(() => resetSessionForTests());
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
 });
 
 describe("useSession", () => {
-  it("reflects sign-in and sign-out in the same tab", () => {
+  it("checks /api/auth/me once and reports the signed-in user", async () => {
+    const calls = mockApi({ "GET /api/auth/me": { body: ADA } });
     const { result } = renderHook(() => useSession());
-    expect(result.current).toEqual({ status: "anonymous" });
+    expect(result.current).toEqual({ status: "loading" });
+    await waitFor(() => expect(result.current).toEqual({ status: "authenticated", session: ADA }));
 
-    act(() => void signIn("ada@example.com", "secret"));
-    expect(result.current).toEqual({
-      status: "authenticated",
-      session: { email: "ada@example.com" },
+    renderHook(() => useSession());
+    expect(calls.filter((call) => call.path === "/api/auth/me")).toHaveLength(1);
+  });
+
+  it("is anonymous without a session", async () => {
+    mockApi({ "GET /api/auth/me": { status: 401, body: { detail: "Please sign in to continue." } } });
+    const { result } = renderHook(() => useSession());
+    await waitFor(() => expect(result.current).toEqual({ status: "anonymous" }));
+  });
+
+  it("is anonymous when the server can't be reached", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")));
+    const { result } = renderHook(() => useSession());
+    await waitFor(() => expect(result.current).toEqual({ status: "anonymous" }));
+  });
+});
+
+describe("signIn, signUp and signOut", () => {
+  it("update the session", async () => {
+    const calls = mockApi({
+      "GET /api/auth/me": { status: 401 },
+      "POST /api/auth/signin": { body: ADA },
+      "POST /api/auth/signup": { status: 201, body: { email: "bob@example.com" } },
+      "POST /api/auth/signout": { status: 204 },
+    });
+    const { result } = renderHook(() => useSession());
+    await waitFor(() => expect(result.current.status).toBe("anonymous"));
+
+    await act(() => signIn("ada@example.com", "secret pass"));
+    expect(result.current).toEqual({ status: "authenticated", session: ADA });
+    expect(calls.at(-1)).toEqual({
+      method: "POST",
+      path: "/api/auth/signin",
+      body: { email: "ada@example.com", password: "secret pass" },
     });
 
-    act(() => signOut());
+    await act(() => signOut());
+    expect(result.current).toEqual({ status: "anonymous" });
+
+    await act(() => signUp("bob@example.com", "secret pass"));
+    expect(result.current).toEqual({ status: "authenticated", session: { email: "bob@example.com" } });
+  });
+
+  it("signIn rejects with the server's message and stays signed out", async () => {
+    mockApi({
+      "GET /api/auth/me": { status: 401 },
+      "POST /api/auth/signin": { status: 401, body: { detail: "Incorrect email or password." } },
+    });
+    const { result } = renderHook(() => useSession());
+    await waitFor(() => expect(result.current.status).toBe("anonymous"));
+    await expect(signIn("ada@example.com", "wrong")).rejects.toThrow("Incorrect email or password.");
     expect(result.current).toEqual({ status: "anonymous" });
   });
 
-  it("reacts to changes made in another tab", () => {
+  it("signOut signs out locally even if the request fails", async () => {
+    mockApi({ "GET /api/auth/me": { body: ADA }, "POST /api/auth/signout": { status: 500 } });
     const { result } = renderHook(() => useSession());
-    act(() => {
-      localStorage.setItem(KEY, JSON.stringify({ email: "bob@example.com" }));
-      window.dispatchEvent(new StorageEvent("storage", { key: KEY }));
-    });
-    expect(result.current).toEqual({
-      status: "authenticated",
-      session: { email: "bob@example.com" },
-    });
+    await waitFor(() => expect(result.current.status).toBe("authenticated"));
+    await act(() => signOut().catch(() => {}));
+    expect(result.current).toEqual({ status: "anonymous" });
+  });
+
+  it("any 401 from the API signs the user out", async () => {
+    mockApi({ "GET /api/auth/me": { body: ADA }, "GET /api/documents": { status: 401 } });
+    const { result } = renderHook(() => useSession());
+    await waitFor(() => expect(result.current.status).toBe("authenticated"));
+    await act(() => apiRequest("/api/documents").catch(() => {}));
+    expect(result.current).toEqual({ status: "anonymous" });
   });
 });

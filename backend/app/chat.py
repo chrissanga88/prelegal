@@ -13,14 +13,28 @@ the new schema, so the same reply can already fill in its fields.
 """
 
 import json
+import logging
 from datetime import date
 from typing import Annotated, Any, Literal
 
-from anthropic import Anthropic
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, create_model, model_validator
+from anthropic import Anthropic, AnthropicError
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    ValidationError,
+    create_model,
+    model_validator,
+)
 from pydantic.alias_generators import to_camel
 
+from app.auth import CurrentUser
+from app.deps import Specs
 from app.documents import DocumentSpec
+
+logger = logging.getLogger(__name__)
 
 MODEL = "claude-haiku-5-5"
 MAX_TOKENS = 16000
@@ -321,3 +335,36 @@ def run_chat_turn(
             return ChatResponse(reply=reply, draft=draft)
 
     return ChatResponse(reply=reply, draft=apply_turn(turn, spec, draft))
+
+
+# --- API ---
+
+CHAT_UNAVAILABLE = "The AI assistant is unavailable right now. Please try again."
+
+
+def get_llm_client(request: Request) -> Anthropic:
+    """The app's Anthropic client, created on first use so the app starts (and
+    /api/health works) without an API key. Tests inject a fake via create_app."""
+    state = request.app.state
+    if state.llm_client is None:
+        client = Anthropic()
+        # The SDK only complains about missing credentials once a request is sent.
+        if client.api_key is None and client.auth_token is None:
+            raise ChatError("ANTHROPIC_API_KEY is not set")
+        state.llm_client = client
+    return state.llm_client
+
+
+router = APIRouter(prefix="/api", tags=["chat"])
+
+
+@router.post("/chat")
+def chat(request: ChatRequest, http_request: Request, _: CurrentUser, specs: Specs) -> ChatResponse:
+    if request.draft.document_type not in (None, *specs):
+        raise HTTPException(status_code=422, detail="Unknown document type")
+    try:
+        client = get_llm_client(http_request)
+        return run_chat_turn(client, specs, request.messages, request.draft, date.today())
+    except (AnthropicError, ChatError, ValidationError):
+        logger.exception("Chat turn failed")
+        raise HTTPException(status_code=502, detail=CHAT_UNAVAILABLE)

@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from datetime import date
 from types import SimpleNamespace
 
@@ -21,6 +22,7 @@ from app.chat import (
 from app.config import DEFAULT_DOCUMENTS_PATH
 from app.documents import load_documents
 from app.main import create_app
+from tests.helpers import sign_up
 
 DOCUMENTS = load_documents(DEFAULT_DOCUMENTS_PATH)
 NDA = DOCUMENTS["mutual-nda"]
@@ -87,8 +89,12 @@ def say(text: str) -> list[ChatMessage]:
     return [ChatMessage(role="user", content=text)]
 
 
-def chat_client(settings, fake: FakeClient) -> TestClient:
-    return TestClient(create_app(settings, llm_client=fake))
+@contextmanager
+def chat_client(settings, fake: FakeClient):
+    """A signed-in client whose app uses the fake Anthropic client."""
+    with TestClient(create_app(settings, llm_client=fake)) as client:
+        sign_up(client)
+        yield client
 
 
 def request_body(text: str = "hi", draft_json: dict = EMPTY_DRAFT) -> dict:
@@ -378,7 +384,16 @@ def test_missing_api_key_only_affects_chat(settings, monkeypatch):
     monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
     with TestClient(create_app(settings)) as client:
         assert client.get("/api/health").status_code == 200
+        sign_up(client)
         assert client.post("/api/chat", json=request_body()).status_code == 502
+
+
+def test_chat_requires_sign_in(settings):
+    fake = FakeClient()
+    with TestClient(create_app(settings, llm_client=fake)) as client:
+        response = client.post("/api/chat", json=request_body())
+    assert response.status_code == 401
+    assert fake.messages.calls == []
 
 
 def test_parse_validation_error_returns_502(settings):

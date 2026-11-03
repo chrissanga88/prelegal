@@ -4,21 +4,25 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createEmptyDraft } from "@/lib/documents/draft";
+import type { ChatMessage } from "@/lib/documents/chat";
 import type { DocumentDraft } from "@/lib/documents/types";
 import { DocumentChat, GREETING } from "./DocumentChat";
 
 const initialData = createEmptyDraft();
 let latest: DocumentDraft;
+let latestMessages: ChatMessage[];
 let fetchMock: ReturnType<typeof vi.fn>;
 
 function Harness() {
-  const [data, setData] = useState(initialData);
+  const [state, setState] = useState({ messages: [] as ChatMessage[], draft: initialData });
   return (
     <DocumentChat
-      draft={data}
-      onChange={(next) => {
-        latest = next;
-        setData(next);
+      messages={state.messages}
+      draft={state.draft}
+      onTurn={(messages, draft) => {
+        latest = draft;
+        latestMessages = messages;
+        setState({ messages, draft });
       }}
     />
   );
@@ -38,6 +42,7 @@ function sentBody(call: number) {
 
 beforeEach(() => {
   latest = initialData;
+  latestMessages = [];
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
 });
@@ -64,6 +69,10 @@ describe("DocumentChat", () => {
     expect(await screen.findByText("Got it. Who is the other party?")).toBeTruthy();
     expect(screen.getByText("Use Delaware law")).toBeTruthy();
     expect(latest).toEqual(updated);
+    expect(latestMessages).toEqual([
+      { role: "user", content: "Use Delaware law" },
+      { role: "assistant", content: "Got it. Who is the other party?" },
+    ]);
     expect(screen.getByLabelText("Message")).toHaveProperty("value", "");
     // The greeting is display-only; the API conversation starts with the user.
     expect(sentBody(0)).toEqual({
@@ -123,6 +132,8 @@ describe("DocumentChat", () => {
 
     await user.type(screen.getByLabelText("Message"), "hello{Enter}");
     expect(screen.getByText("Assistant is typing…")).toBeTruthy();
+    // The user's message shows straight away, before the reply.
+    expect(screen.getByRole("log").textContent).toContain("hello");
 
     await user.type(screen.getByLabelText("Message"), "again{Enter}");
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -143,6 +154,7 @@ describe("DocumentChat", () => {
     expect(screen.getByLabelText("Message")).toHaveProperty("value", "hello");
     expect(screen.getByRole("log").textContent).not.toContain("hello");
     expect(latest).toBe(initialData);
+    expect(latestMessages).toEqual([]);
 
     fetchMock.mockResolvedValueOnce(reply({ reply: "Back again", draft: initialData }));
     await user.click(screen.getByRole("button", { name: "Send" }));

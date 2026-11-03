@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { MAX_MESSAGE_LENGTH, sendChatTurn, type ChatMessage } from "@/lib/documents/chat";
 import type { DocumentDraft } from "@/lib/documents/types";
-import { inputClass } from "@/components/ui/styles";
+import { buttonClass, inputClass } from "@/components/ui/styles";
 
 /**
  * Shown first in the chat. It is not sent to the API, which requires the
@@ -14,8 +14,11 @@ export const GREETING =
   "Hi! I’ll help you draft a legal agreement, such as an NDA, a cloud service agreement or a data processing agreement. What would you like to create, and who is it with?";
 
 type Props = {
+  /** The conversation so far (without the greeting). */
+  messages: ChatMessage[];
   draft: DocumentDraft;
-  onChange: (draft: DocumentDraft) => void;
+  /** Called after each AI reply with the extended conversation and the updated draft. */
+  onTurn: (messages: ChatMessage[], draft: DocumentDraft) => void;
 };
 
 function Bubble({ message }: { message: ChatMessage }) {
@@ -23,8 +26,8 @@ function Bubble({ message }: { message: ChatMessage }) {
   return (
     <div className={`flex ${fromUser ? "justify-end" : "justify-start"}`}>
       <p
-        className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-4 py-2 text-sm shadow-sm ${
-          fromUser ? "bg-primary text-white" : "border border-line bg-white text-navy"
+        className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
+          fromUser ? "rounded-br-sm bg-primary text-white" : "rounded-bl-sm border border-line bg-white text-navy"
         }`}
       >
         <span className="sr-only">{fromUser ? "You: " : "Assistant: "}</span>
@@ -35,8 +38,9 @@ function Bubble({ message }: { message: ChatMessage }) {
 }
 
 /** Freeform chat with the AI, which picks the document and fills in its fields from the conversation. */
-export function DocumentChat({ draft, onChange }: Props) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export function DocumentChat({ messages, draft, onTurn }: Props) {
+  // The user's message while waiting for the reply; it joins `messages` via onTurn.
+  const [sending, setSending] = useState<ChatMessage | null>(null);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,27 +50,27 @@ export function DocumentChat({ draft, onChange }: Props) {
   useEffect(() => {
     const log = logRef.current;
     if (log) log.scrollTop = log.scrollHeight;
-  }, [messages, pending, error]);
+  }, [messages, sending, pending, error]);
 
   async function send() {
     const content = input.trim();
     if (!content || pending) return;
 
-    const conversation: ChatMessage[] = [...messages, { role: "user", content }];
-    setMessages(conversation);
+    const message: ChatMessage = { role: "user", content };
+    const conversation = [...messages, message];
+    setSending(message);
     setInput("");
     setError(null);
     setPending(true);
     try {
       const result = await sendChatTurn(conversation, draft);
-      setMessages([...conversation, { role: "assistant", content: result.reply }]);
-      onChange(result.draft);
+      onTurn([...conversation, { role: "assistant", content: result.reply }], result.draft);
     } catch (err) {
-      // Drop the unanswered message and give it back so the user can resend it.
-      setMessages(messages);
+      // Give the unanswered message back so the user can resend it.
       setInput(content);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
+      setSending(null);
       setPending(false);
     }
   }
@@ -85,7 +89,7 @@ export function DocumentChat({ draft, onChange }: Props) {
   }
 
   return (
-    <div className="flex h-[32rem] flex-col rounded-lg border border-line bg-surface lg:h-[calc(100vh-10rem)]">
+    <div className="flex h-[32rem] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-sm lg:h-[calc(100vh-19rem)] lg:min-h-[26rem]">
       <div
         ref={logRef}
         role="log"
@@ -97,7 +101,17 @@ export function DocumentChat({ draft, onChange }: Props) {
         {messages.map((message, index) => (
           <Bubble key={index} message={message} />
         ))}
-        {pending && <p className="text-sm text-muted">Assistant is typing…</p>}
+        {sending && <Bubble message={sending} />}
+        {pending && (
+          <p className="flex items-center gap-2 text-sm text-navy/60">
+            <span aria-hidden="true" className="flex gap-1">
+              <span className="size-1.5 animate-bounce rounded-full bg-navy/40" />
+              <span className="size-1.5 animate-bounce rounded-full bg-navy/40 [animation-delay:150ms]" />
+              <span className="size-1.5 animate-bounce rounded-full bg-navy/40 [animation-delay:300ms]" />
+            </span>
+            Assistant is typing…
+          </p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-2 border-t border-line bg-white p-4">
@@ -120,7 +134,7 @@ export function DocumentChat({ draft, onChange }: Props) {
           <button
             type="submit"
             disabled={pending || !input.trim()}
-            className="rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-secondary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            className={buttonClass.submit}
           >
             Send
           </button>

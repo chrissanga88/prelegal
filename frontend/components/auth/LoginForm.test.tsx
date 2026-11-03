@@ -26,7 +26,7 @@ describe("LoginForm", () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("signs in with any email and password and opens the NDA creator", async () => {
+  it("signs in with any email and password and opens the document creator", async () => {
     const user = userEvent.setup();
     render(<LoginForm />);
 
@@ -35,12 +35,12 @@ describe("LoginForm", () => {
     await user.click(screen.getByRole("button", { name: "Sign in" }));
 
     expect(readSession()).toEqual({ email: "ada@example.com" });
-    expect(replace).toHaveBeenCalledWith("/nda/");
+    expect(replace).toHaveBeenCalledWith("/draft/");
   });
 
   it("redirects a user who is already signed in", () => {
     signIn("ada@example.com", "secret");
     render(<LoginForm />);
-    expect(replace).toHaveBeenCalledWith("/nda/");
+    expect(replace).toHaveBeenCalledWith("/draft/");
   });
 });

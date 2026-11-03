@@ -11,9 +11,9 @@ from app.main import create_app
 def static_dir(tmp_path: Path) -> Path:
     """A minimal stand-in for the Next.js static export."""
     out = tmp_path / "out"
-    (out / "nda").mkdir(parents=True)
+    (out / "draft").mkdir(parents=True)
     (out / "index.html").write_text("<h1>login page</h1>")
-    (out / "nda" / "index.html").write_text("<h1>nda page</h1>")
+    (out / "draft" / "index.html").write_text("<h1>draft page</h1>")
     (out / "404.html").write_text("<h1>not found page</h1>")
     return out
 

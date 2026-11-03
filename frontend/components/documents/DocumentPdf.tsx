@@ -1,12 +1,13 @@
 import { Document, Font, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { loadStandardTerms } from "@/lib/documents/catalog";
 import {
-  ATTRIBUTION,
-  COVER_PAGE_INTRO,
-  SIGNING_STATEMENT,
-  coverPageFields,
+  attribution,
+  coverPageIntro,
+  coverPageLines,
   partyRows,
-} from "@/lib/nda/coverPage";
-import type { NdaData, Section } from "@/lib/nda/types";
+  signingStatement,
+} from "@/lib/documents/draft";
+import type { DocumentDraft, DocumentSpec } from "@/lib/documents/types";
 
 const BLANK = "____________________";
 
@@ -63,46 +64,47 @@ const styles = StyleSheet.create({
   footer: { marginTop: 16, fontSize: 8, color: "#666" },
 });
 
+/** Left indentation (points) per clause depth. */
+const DEPTH_INDENT = 18;
+
 /**
- * PDF rendering of the completed Mutual NDA; mirrors NdaPreview.
+ * PDF rendering of the document being drafted; mirrors DocumentPreview.
  * Call registerPdfFonts before rendering.
  */
-export function NdaPdfDocument({ data, sections }: { data: NdaData; sections: Section[] }) {
+export function DocumentPdf({ spec, draft }: { spec: DocumentSpec; draft: DocumentDraft }) {
   return (
-    <Document title="Mutual Non-Disclosure Agreement" creator="Prelegal">
+    <Document title={spec.name} creator="Prelegal">
       <Page size="LETTER" style={styles.page}>
-        <Text style={styles.title}>Mutual Non-Disclosure Agreement</Text>
-        <Text style={styles.paragraph}>{COVER_PAGE_INTRO}</Text>
+        <Text style={styles.title}>{spec.name}</Text>
+        <Text style={styles.paragraph}>{coverPageIntro(spec)}</Text>
 
-        {coverPageFields(data).map((field) => (
-          // Fields may be long (e.g. MNDA Modifications), so they must be able to
+        {coverPageLines(spec, draft).map((line) => (
+          // Fields may be long (e.g. Modifications), so they must be able to
           // break across pages; minPresenceAhead keeps a heading with its text.
-          <View key={field.heading}>
+          <View key={line.label}>
             <Text style={styles.heading} minPresenceAhead={30}>
-              {field.heading}
+              {line.label}
             </Text>
-            {field.lines.map((line, i) => (
-              <Text key={i} style={styles.paragraph}>
-                {line.label && `${line.label}: `}
-                {line.value ?? BLANK}
-              </Text>
-            ))}
+            <Text style={styles.paragraph}>{line.value ?? BLANK}</Text>
           </View>
         ))}
 
-        {/* Kept on one page; its height is bounded because party inputs have a maxLength. */}
+        {/* Kept on one page; its height is bounded because party fields are capped at 200 characters. */}
         <View wrap={false}>
-          <Text style={[styles.paragraph, { marginTop: 12 }]}>{SIGNING_STATEMENT}</Text>
+          <Text style={[styles.paragraph, { marginTop: 12 }]}>{signingStatement(spec)}</Text>
           <View style={styles.table}>
             <View style={styles.row}>
               <Text style={[styles.cell, styles.labelCell]} />
-              <Text style={[styles.cell, styles.bold, { textAlign: "center" }]}>PARTY 1</Text>
-              <Text style={[styles.cell, styles.bold, { textAlign: "center" }]}>PARTY 2</Text>
+              {spec.partyRoles.map((role) => (
+                <Text key={role} style={[styles.cell, styles.bold, { textAlign: "center" }]}>
+                  {role.toUpperCase()}
+                </Text>
+              ))}
             </View>
             {partyRows.map(({ label, field }) => (
               <View key={label} style={styles.row}>
                 <Text style={[styles.cell, styles.labelCell]}>{label}</Text>
-                {data.parties.map((party, i) => (
+                {draft.parties.map((party, i) => (
                   <Text key={i} style={styles.cell}>
                     {field ? party[field] : ""}
                   </Text>
@@ -115,17 +117,17 @@ export function NdaPdfDocument({ data, sections }: { data: NdaData; sections: Se
 
       <Page size="LETTER" style={styles.page}>
         <Text style={styles.title}>Standard Terms</Text>
-        {sections.map((section) => (
-          <Text key={section.number} style={styles.section}>
-            {section.number}. <Text style={styles.bold}>{section.title}</Text>.{" "}
-            {section.body.map((segment, i) => (
-              <Text key={i} style={segment.type === "text" ? undefined : styles.bold}>
+        {loadStandardTerms(spec).map((clause, i) => (
+          <Text key={i} style={[styles.section, { marginLeft: clause.depth * DEPTH_INDENT }]}>
+            {clause.label}{" "}
+            {clause.segments.map((segment, j) => (
+              <Text key={j} style={segment.type === "text" ? undefined : styles.bold}>
                 {segment.text}
               </Text>
             ))}
           </Text>
         ))}
-        <Text style={styles.footer}>{ATTRIBUTION}</Text>
+        <Text style={styles.footer}>{attribution(spec)}</Text>
       </Page>
     </Document>
   );

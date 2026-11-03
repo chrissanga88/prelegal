@@ -16,7 +16,7 @@ export function LoginForm() {
 
   // Covers both a fresh sign-in and a user who is already signed in.
   useEffect(() => {
-    if (authenticated) router.replace("/nda/");
+    if (authenticated) router.replace("/draft/");
   }, [authenticated, router]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {

@@ -28,3 +28,4 @@ def client(settings: Settings):
     # Entering the context manager runs the lifespan, which builds the database.
     with TestClient(create_app(settings)) as test_client:
         yield test_client
+

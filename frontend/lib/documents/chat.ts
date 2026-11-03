@@ -1,3 +1,4 @@
+import { ApiError, apiRequest } from "@/lib/api";
 import type { DocumentDraft } from "./types";
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -15,36 +16,21 @@ export const MAX_MESSAGE_LENGTH = 4000;
  */
 const MAX_HISTORY_MESSAGES = 59;
 
-const GENERIC_ERROR = "Something went wrong. Please try again.";
-
 /**
  * Sends the conversation (ending with the user's latest message) and the
  * current draft to the AI, and returns its reply with the updated draft.
- * Throws an Error whose message is safe to show to the user.
+ * Throws an ApiError whose message is safe to show to the user.
  */
 export async function sendChatTurn(
   messages: ChatMessage[],
   draft: DocumentDraft,
 ): Promise<ChatTurnResult> {
-  let response: Response;
-  try {
-    response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: messages.slice(-MAX_HISTORY_MESSAGES), draft }),
-    });
-  } catch {
-    throw new Error("Couldn’t reach the server. Check your connection and try again.");
-  }
-
-  const body = await response.json().catch(() => null);
-  if (!response.ok) {
-    // FastAPI errors carry a user-facing string in `detail` (validation errors carry a list).
-    const detail = body?.detail;
-    throw new Error(typeof detail === "string" ? detail : GENERIC_ERROR);
-  }
-  if (typeof body?.reply !== "string" || typeof body?.draft !== "object" || !body.draft) {
-    throw new Error(GENERIC_ERROR);
+  const body = await apiRequest<Partial<ChatTurnResult>>("/api/chat", {
+    method: "POST",
+    body: { messages: messages.slice(-MAX_HISTORY_MESSAGES), draft },
+  });
+  if (typeof body.reply !== "string" || typeof body.draft !== "object" || !body.draft) {
+    throw new ApiError(200, "Something went wrong. Please try again.");
   }
   return body as ChatTurnResult;
 }

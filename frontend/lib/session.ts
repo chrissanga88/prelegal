@@ -1,13 +1,12 @@
 import { useSyncExternalStore } from "react";
+import { apiRequest, setUnauthorizedHandler } from "./api";
 
 /**
- * Client-side session for the V1 fake login. There is no real authentication:
- * any non-empty email and password "signs in". This module is the only place
- * that touches session storage, so real auth can later replace its internals
- * without changing the components that use it.
+ * The signed-in user. The session itself is an HttpOnly cookie set by the
+ * backend, so JavaScript never sees the token; this module only tracks who is
+ * signed in, asking /api/auth/me once on first use. It is the only module that
+ * talks to the auth API.
  */
-
-const STORAGE_KEY = "prelegal.session";
 
 export type Session = { email: string };
 
@@ -16,68 +15,72 @@ export type SessionState =
   | { status: "anonymous" }
   | { status: "authenticated"; session: Session };
 
+const LOADING: SessionState = { status: "loading" };
+const ANONYMOUS: SessionState = { status: "anonymous" };
+
+let state: SessionState = LOADING;
+let checked = false;
 const listeners = new Set<() => void>();
 
-function emitChange() {
+function setState(next: SessionState) {
+  state = next;
   listeners.forEach((listener) => listener());
 }
 
-function parseSession(raw: string | null): Session | null {
-  if (!raw) return null;
+function authenticated(session: Session) {
+  setState({ status: "authenticated", session });
+}
+
+// Any 401 (e.g. an expired session) means the user is no longer signed in.
+setUnauthorizedHandler(() => setState(ANONYMOUS));
+
+async function checkSession() {
   try {
-    const value: unknown = JSON.parse(raw);
-    if (
-      typeof value === "object" &&
-      value !== null &&
-      "email" in value &&
-      typeof value.email === "string" &&
-      value.email.trim() !== ""
-    ) {
-      return { email: value.email };
-    }
+    authenticated(await apiRequest<Session>("/api/auth/me"));
   } catch {
-    // Corrupt storage is treated as signed out.
+    setState(ANONYMOUS);
   }
-  return null;
 }
 
-export function readSession(): Session | null {
-  return parseSession(localStorage.getItem(STORAGE_KEY));
+function authenticateWith(path: string) {
+  return async (email: string, password: string): Promise<void> => {
+    authenticated(await apiRequest<Session>(path, { method: "POST", body: { email, password } }));
+  };
 }
 
-/** Signs in with any non-empty email and password. The password is never stored. */
-export function signIn(email: string, password: string): Session | null {
-  const trimmedEmail = email.trim();
-  if (trimmedEmail === "" || password.trim() === "") return null;
-  const session: Session = { email: trimmedEmail };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-  emitChange();
-  return session;
-}
+/** Throws an ApiError (e.g. "Incorrect email or password.") on failure. */
+export const signIn = authenticateWith("/api/auth/signin");
 
-export function signOut(): void {
-  localStorage.removeItem(STORAGE_KEY);
-  emitChange();
+/** Creates an account and signs in. Throws an ApiError on failure. */
+export const signUp = authenticateWith("/api/auth/signup");
+
+export async function signOut(): Promise<void> {
+  try {
+    await apiRequest("/api/auth/signout", { method: "POST" });
+  } finally {
+    // Signed out locally even if the request failed; the cookie expires anyway.
+    setState(ANONYMOUS);
+  }
 }
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
-  // Keep other tabs in sync, e.g. signing out everywhere at once.
-  window.addEventListener("storage", listener);
-  return () => {
-    listeners.delete(listener);
-    window.removeEventListener("storage", listener);
-  };
+  if (!checked) {
+    checked = true;
+    void checkSession();
+  }
+  return () => listeners.delete(listener);
 }
 
-// The raw string is the snapshot because it is referentially stable between reads.
-const getSnapshot = () => localStorage.getItem(STORAGE_KEY);
-// Storage is unavailable while prerendering, so report "loading" until hydrated.
-const getServerSnapshot = () => undefined;
+const getSnapshot = () => state;
+const getServerSnapshot = () => LOADING;
 
 export function useSession(): SessionState {
-  const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  if (raw === undefined) return { status: "loading" };
-  const session = parseSession(raw);
-  return session ? { status: "authenticated", session } : { status: "anonymous" };
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
+/** @internal Test helper: forget the cached session so the next subscriber checks again. */
+export function resetSessionForTests() {
+  state = LOADING;
+  checked = false;
 }

@@ -13,7 +13,9 @@ Prelegal runs as a single Docker container: a FastAPI backend that serves the AP
 | Linux | `scripts/start-linux.sh` | `scripts/stop-linux.sh` |
 | Windows | `scripts\start-windows.ps1` | `scripts\stop-windows.ps1` |
 
-Then open http://localhost:8000. Sign-in is a placeholder for now: any email and password works.
+Then open http://localhost:8000, create an account and start drafting. Your documents are saved automatically and listed under My documents. Accounts and documents live in the temporary database, so they are wiped whenever the app restarts.
+
+Every generated document is a draft: the app labels it as subject to legal review, and it should be checked by a qualified lawyer before use.
 
 Agreements are drafted by chatting with an AI assistant (Claude Haiku), which needs an `ANTHROPIC_API_KEY`. Put it in a `.env` file in the project root: it is passed to the container at runtime and never copied into the image. Without a key the app still runs, but the chat replies with an error.
 

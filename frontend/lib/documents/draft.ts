@@ -32,6 +32,11 @@ export function formatDate(isoDate: string): string {
   return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 }
 
+/** Shown in the creator and at the top of every preview and PDF. */
+export const DRAFT_NOTICE_TITLE = "Draft – subject to legal review";
+export const DRAFT_NOTICE =
+  "This document was prepared with AI assistance and is not legal advice. Have it reviewed by a qualified lawyer before you sign or rely on it.";
+
 export function coverPageIntro(spec: DocumentSpec): string {
   return `This ${spec.name} consists of: (1) this Cover Page (“Cover Page”) and (2) the Common Paper ${spec.name} Standard Terms (“Standard Terms”). Any modifications of the Standard Terms should be made on the Cover Page, which will control over conflicts with the Standard Terms.`;
 }

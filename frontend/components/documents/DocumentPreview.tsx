@@ -1,5 +1,7 @@
 import { loadStandardTerms } from "@/lib/documents/catalog";
 import {
+  DRAFT_NOTICE,
+  DRAFT_NOTICE_TITLE,
   attribution,
   coverPageIntro,
   coverPageLines,
@@ -33,6 +35,9 @@ export function DocumentPreview({ spec, draft }: { spec: DocumentSpec; draft: Do
 
   return (
     <article className="space-y-6 font-serif text-[13px] leading-relaxed text-navy">
+      <p className="rounded border border-accent/60 bg-accent/10 px-3 py-2 font-sans text-xs text-navy">
+        <strong className="uppercase tracking-wide">{DRAFT_NOTICE_TITLE}.</strong> {DRAFT_NOTICE}
+      </p>
       <header className="space-y-3">
         <h1 className="text-center text-xl font-bold">{spec.name}</h1>
         <p>{coverPageIntro(spec)}</p>

@@ -1,6 +1,8 @@
 import { Document, Font, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { loadStandardTerms } from "@/lib/documents/catalog";
 import {
+  DRAFT_NOTICE,
+  DRAFT_NOTICE_TITLE,
   attribution,
   coverPageIntro,
   coverPageLines,
@@ -62,6 +64,7 @@ const styles = StyleSheet.create({
   labelCell: { flex: 0.7, fontWeight: "bold" },
   section: { marginBottom: 6, textAlign: "justify" },
   footer: { marginTop: 16, fontSize: 8, color: "#666" },
+  notice: { marginBottom: 14, padding: 6, fontSize: 8.5, borderWidth: 1, borderColor: "#ecad0a" },
 });
 
 /** Left indentation (points) per clause depth. */
@@ -75,6 +78,10 @@ export function DocumentPdf({ spec, draft }: { spec: DocumentSpec; draft: Docume
   return (
     <Document title={spec.name} creator="Prelegal">
       <Page size="LETTER" style={styles.page}>
+        <Text style={styles.notice}>
+          <Text style={styles.bold}>{DRAFT_NOTICE_TITLE.toUpperCase()}. </Text>
+          {DRAFT_NOTICE}
+        </Text>
         <Text style={styles.title}>{spec.name}</Text>
         <Text style={styles.paragraph}>{coverPageIntro(spec)}</Text>
 

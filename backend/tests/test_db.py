@@ -45,3 +45,11 @@ def test_startup_recreates_database_from_scratch(settings):
         with open_db(settings.db_path) as connection:
             count = connection.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     assert count == 0
+
+
+def test_db_dependency_commits_before_the_response():
+    """A yield dependency in the default "request" scope would only commit after
+    the response is sent, so a client's next request could miss the write."""
+    from app.deps import Db
+
+    assert Db.__metadata__[0].scope == "function"

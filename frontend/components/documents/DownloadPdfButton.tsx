@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { buttonClass } from "@/components/ui/styles";
 import { pdfFileName } from "@/lib/documents/draft";
 import type { DocumentDraft, DocumentSpec } from "@/lib/documents/types";
 
@@ -48,7 +49,7 @@ export function DownloadPdfButton({ spec, draft }: { spec: DocumentSpec; draft: 
         type="button"
         onClick={handleDownload}
         disabled={status === "generating"}
-        className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:cursor-wait disabled:opacity-60"
+        className={buttonClass.primary}
       >
         {status === "generating" ? "Generating…" : "Download PDF"}
       </button>

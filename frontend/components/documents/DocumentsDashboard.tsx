@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { buttonClass, cardClass } from "@/components/ui/styles";
+import { useEffect, useRef, useState } from "react";
+import { alertClass, buttonClass, cardClass } from "@/components/ui/styles";
 import { getDocument } from "@/lib/documents/catalog";
 import { deleteDocument, listDocuments, type DocumentSummary } from "@/lib/documents/library";
 
@@ -41,6 +41,12 @@ function EmptyState() {
 /** Deletes after a second click, so a slip of the mouse can't lose a document. */
 function DeleteButton({ title, onDelete }: { title: string; onDelete: () => Promise<void> }) {
   const [step, setStep] = useState<"idle" | "confirm" | "deleting">("idle");
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  // The Delete button is replaced by the confirmation, so move keyboard focus to it.
+  useEffect(() => {
+    if (step === "confirm") confirmRef.current?.focus();
+  }, [step]);
 
   if (step === "idle") {
     return (
@@ -57,7 +63,9 @@ function DeleteButton({ title, onDelete }: { title: string; onDelete: () => Prom
   return (
     <span className="inline-flex items-center gap-2">
       <button
+        ref={confirmRef}
         type="button"
+        aria-label={`Confirm delete ${title}`}
         disabled={step === "deleting"}
         onClick={async () => {
           setStep("deleting");
@@ -71,7 +79,12 @@ function DeleteButton({ title, onDelete }: { title: string; onDelete: () => Prom
       >
         {step === "deleting" ? "Deleting…" : "Confirm delete"}
       </button>
-      <button type="button" onClick={() => setStep("idle")} className="text-sm text-navy/60 hover:text-navy">
+      <button
+        type="button"
+        aria-label={`Cancel deleting ${title}`}
+        onClick={() => setStep("idle")}
+        className="text-sm text-navy/60 hover:text-navy"
+      >
         Cancel
       </button>
     </span>
@@ -114,7 +127,7 @@ export function DocumentsDashboard() {
   }
   if (state.status === "error") {
     return (
-      <p role="alert" className="rounded-lg bg-danger/10 px-4 py-3 text-sm text-danger">
+      <p role="alert" className={alertClass}>
         Couldn’t load your documents. {state.message}
       </p>
     );
@@ -124,7 +137,7 @@ export function DocumentsDashboard() {
   return (
     <div className="space-y-3">
       {deleteError && (
-        <p role="alert" className="rounded-lg bg-danger/10 px-4 py-3 text-sm text-danger">
+        <p role="alert" className={alertClass}>
           {deleteError}
         </p>
       )}
@@ -154,7 +167,11 @@ export function DocumentsDashboard() {
                 <td className="whitespace-nowrap px-5 py-4 text-navy/70">{formatUpdated(doc.updatedAt)}</td>
                 <td className="whitespace-nowrap px-5 py-4 text-right">
                   <span className="inline-flex items-center gap-4">
-                    <Link href={`/draft/?id=${doc.id}`} className="text-sm font-semibold text-primary hover:text-primary-hover">
+                    <Link
+                      href={`/draft/?id=${doc.id}`}
+                      aria-label={`Open ${doc.title}`}
+                      className="text-sm font-semibold text-primary hover:text-primary-hover"
+                    >
                       Open
                     </Link>
                     <DeleteButton title={doc.title} onDelete={() => remove(doc.id)} />

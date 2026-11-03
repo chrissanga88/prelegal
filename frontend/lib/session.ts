@@ -28,7 +28,7 @@ function setState(next: SessionState) {
 }
 
 function authenticated(session: Session) {
-  setState({ status: "authenticated", session: { email: session.email } });
+  setState({ status: "authenticated", session });
 }
 
 // Any 401 (e.g. an expired session) means the user is no longer signed in.
@@ -42,15 +42,17 @@ async function checkSession() {
   }
 }
 
-/** Throws an ApiError (e.g. "Incorrect email or password.") on failure. */
-export async function signIn(email: string, password: string): Promise<void> {
-  authenticated(await apiRequest<Session>("/api/auth/signin", { method: "POST", body: { email, password } }));
+function authenticateWith(path: string) {
+  return async (email: string, password: string): Promise<void> => {
+    authenticated(await apiRequest<Session>(path, { method: "POST", body: { email, password } }));
+  };
 }
 
+/** Throws an ApiError (e.g. "Incorrect email or password.") on failure. */
+export const signIn = authenticateWith("/api/auth/signin");
+
 /** Creates an account and signs in. Throws an ApiError on failure. */
-export async function signUp(email: string, password: string): Promise<void> {
-  authenticated(await apiRequest<Session>("/api/auth/signup", { method: "POST", body: { email, password } }));
-}
+export const signUp = authenticateWith("/api/auth/signup");
 
 export async function signOut(): Promise<void> {
   try {
@@ -77,7 +79,7 @@ export function useSession(): SessionState {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/** Test helper: forget the cached session so the next subscriber checks again. */
+/** @internal Test helper: forget the cached session so the next subscriber checks again. */
 export function resetSessionForTests() {
   state = LOADING;
   checked = false;

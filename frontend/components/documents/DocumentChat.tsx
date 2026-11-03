@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { MAX_MESSAGE_LENGTH, sendChatTurn, type ChatMessage } from "@/lib/documents/chat";
 import type { DocumentDraft } from "@/lib/documents/types";
-import { buttonClass, inputClass } from "@/components/ui/styles";
+import { alertClass, buttonClass, inputClass } from "@/components/ui/styles";
 
 /**
  * Shown first in the chat. It is not sent to the API, which requires the
@@ -116,7 +116,7 @@ export function DocumentChat({ messages, draft, onTurn }: Props) {
 
       <form onSubmit={handleSubmit} className="space-y-2 border-t border-line bg-white p-4">
         {error && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className={alertClass}>
             {error}
           </p>
         )}

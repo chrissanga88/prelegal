@@ -17,5 +17,8 @@ export const buttonClass = {
   danger: `${buttonBase} bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger`,
 };
 
+/** Inline error message (use with role="alert"). */
+export const alertClass = "rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger";
+
 /** White panel used for cards, tables and the document preview. */
 export const cardClass = "rounded-xl border border-line bg-white shadow-sm";

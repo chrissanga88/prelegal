@@ -10,23 +10,19 @@ import sqlite3
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Response, status
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-from pydantic.alias_generators import to_camel
+from pydantic import BaseModel, Field, model_validator
 
 from app.auth import CurrentUser
 from app.chat import ChatMessage, DocumentDraft
 from app.db import NOW
 from app.deps import Db, Specs
 from app.documents import DocumentSpec
+from app.models import CamelModel
 
 # A long conversation is still small; this only bounds abuse.
 MAX_SAVED_MESSAGES = 500
 
 NOT_FOUND = "Document not found."
-
-
-class CamelModel(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class DocumentIn(BaseModel):
@@ -59,8 +55,10 @@ def document_title(spec: DocumentSpec, draft: DocumentDraft) -> str:
     return " - ".join([spec.name, *companies])
 
 
-def _summary(row: sqlite3.Row, specs: dict[str, DocumentSpec]) -> DocumentSummary:
-    draft = DocumentDraft.model_validate_json(row["draft"])
+def _summary(
+    row: sqlite3.Row, specs: dict[str, DocumentSpec], draft: DocumentDraft | None = None
+) -> DocumentSummary:
+    draft = draft or DocumentDraft.model_validate_json(row["draft"])
     spec = specs.get(row["document_type"])
     return DocumentSummary(
         id=row["id"],
@@ -72,10 +70,9 @@ def _summary(row: sqlite3.Row, specs: dict[str, DocumentSpec]) -> DocumentSummar
 
 
 def _saved(row: sqlite3.Row, specs: dict[str, DocumentSpec]) -> SavedDocument:
+    draft = DocumentDraft.model_validate_json(row["draft"])
     return SavedDocument(
-        **_summary(row, specs).model_dump(),
-        draft=DocumentDraft.model_validate_json(row["draft"]),
-        messages=json.loads(row["messages"]),
+        **_summary(row, specs, draft).model_dump(), draft=draft, messages=json.loads(row["messages"])
     )
 
 

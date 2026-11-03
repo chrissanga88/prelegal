@@ -34,6 +34,7 @@ describe("DocumentsDashboard", () => {
     render(<DocumentsDashboard />);
 
     const link = await screen.findByRole("link", { name: "Cloud Service Agreement - Acme" });
+    expect(screen.getByRole("link", { name: "Open Cloud Service Agreement - Acme" })).toBeTruthy();
     expect(link.getAttribute("href")).toMatch(/^\/draft\/?\?id=2$/);
     const rows = screen.getAllByRole("row").slice(1);
     expect(rows).toHaveLength(2);
@@ -61,8 +62,12 @@ describe("DocumentsDashboard", () => {
 
     await user.click(await screen.findByRole("button", { name: "Delete Cloud Service Agreement - Acme" }));
     expect(calls.some((call) => call.method === "DELETE")).toBe(false);
+    // Focus moves to the confirmation for keyboard users.
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Confirm delete Cloud Service Agreement - Acme" }),
+    );
 
-    await user.click(screen.getByRole("button", { name: "Confirm delete" }));
+    await user.click(screen.getByRole("button", { name: "Confirm delete Cloud Service Agreement - Acme" }));
 
     expect(await screen.findByRole("link", { name: "Mutual Non-Disclosure Agreement" })).toBeTruthy();
     expect(screen.queryByText("Cloud Service Agreement - Acme")).toBeNull();
@@ -78,11 +83,11 @@ describe("DocumentsDashboard", () => {
     render(<DocumentsDashboard />);
 
     await user.click(await screen.findByRole("button", { name: "Delete Cloud Service Agreement - Acme" }));
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.queryByRole("button", { name: "Confirm delete" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Cancel deleting Cloud Service Agreement - Acme" }));
+    expect(screen.queryByRole("button", { name: "Confirm delete Cloud Service Agreement - Acme" })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Delete Cloud Service Agreement - Acme" }));
-    await user.click(screen.getByRole("button", { name: "Confirm delete" }));
+    await user.click(screen.getByRole("button", { name: "Confirm delete Cloud Service Agreement - Acme" }));
 
     expect((await screen.findByRole("alert")).textContent).toBe("Server error.");
     expect(screen.getByText("Cloud Service Agreement - Acme")).toBeTruthy();

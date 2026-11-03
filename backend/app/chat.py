@@ -21,18 +21,17 @@ from anthropic import Anthropic, AnthropicError
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import (
     BaseModel,
-    ConfigDict,
     Field,
     StringConstraints,
     ValidationError,
     create_model,
     model_validator,
 )
-from pydantic.alias_generators import to_camel
 
 from app.auth import CurrentUser
 from app.deps import Specs
 from app.documents import DocumentSpec
+from app.models import CamelModel
 
 logger = logging.getLogger(__name__)
 
@@ -54,10 +53,6 @@ class ChatError(Exception):
 
 
 # --- API contract (mirrors frontend/lib/documents/types.ts) ---
-
-
-class CamelModel(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 PartyText = Annotated[str, Field(max_length=PARTY_FIELD_MAX_LENGTH)]

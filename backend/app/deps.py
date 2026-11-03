@@ -25,5 +25,8 @@ def get_db(settings: Annotated[Settings, Depends(get_settings)]) -> Iterator[sql
         yield connection
 
 
-Db = Annotated[sqlite3.Connection, Depends(get_db)]
+# scope="function" closes the connection (and commits) before the response is
+# sent; the default "request" scope would commit after the client already has
+# its answer, so an immediate follow-up request might not see the write.
+Db = Annotated[sqlite3.Connection, Depends(get_db, scope="function")]
 Specs = Annotated[dict[str, DocumentSpec], Depends(get_specs)]

@@ -151,6 +151,30 @@ describe("DocumentCreator", () => {
     expect(screen.getByRole("link", { name: "Back to my documents" }).getAttribute("href")).toMatch(/^\/documents\/?$/);
   });
 
+  it("ignores a reply that arrives after another document was opened", async () => {
+    let answer!: (response: Response) => void;
+    const calls = mockApi({ "GET /api/documents/5": { body: saved(5, csaDraft({ fees: "Saved fees" }), []) } });
+    const fetchMock = vi.mocked(fetch);
+    const realFetch = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((path, init) =>
+      path === "/api/chat" ? new Promise<Response>((resolve) => (answer = resolve)) : realFetch(path, init),
+    );
+    const { rerender } = render(<DocumentCreator documentId={null} />);
+    await say("A CSA");
+    expect(screen.getByText("Assistant is typing…")).toBeTruthy();
+
+    rerender(<DocumentCreator documentId={5} />);
+    expect(await screen.findByText("Saved fees")).toBeTruthy();
+
+    answer(new Response(JSON.stringify({ reply: "Old reply", draft: csaDraft({ fees: "Old fees" }) }), { status: 200 }));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(screen.queryByText("Old reply")).toBeNull();
+    expect(within(preview()).getByText("Saved fees")).toBeTruthy();
+    expect(screen.queryByText("Assistant is typing…")).toBeNull();
+    expect(calls.some((call) => call.method !== "GET")).toBe(false);
+  });
+
   it("starts afresh when switching to a new document", async () => {
     mockApi({
       "GET /api/documents/3": { body: saved(3, csaDraft(), [{ role: "user", content: "Old chat" }, { role: "assistant", content: "Old reply" }]) },

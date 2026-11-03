@@ -169,7 +169,9 @@ def sign_in(body: Credentials, response: Response, db: Db) -> Account:
     row = db.execute(
         "SELECT id, email, password_hash FROM users WHERE email = ?", (body.email,)
     ).fetchone()
-    if not verify_password(body.password, row["password_hash"] if row else _DUMMY_HASH) or not row:
+    # Unknown emails are checked against a dummy hash, so both failures take as long.
+    password_ok = verify_password(body.password, row["password_hash"] if row else _DUMMY_HASH)
+    if row is None or not password_ok:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail=BAD_CREDENTIALS)
     _set_session_cookie(response, create_session(db, row["id"]))
     return Account(email=row["email"])

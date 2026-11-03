@@ -54,8 +54,7 @@ type View = {
   id: number | null;
   /** Increases each time another document is opened; stale saves and loads check it. */
   instance: number;
-  status: "loading" | "ready" | "error";
-  loadError?: string;
+  status: "loading" | "ready" | { error: string };
   draft: DocumentDraft;
   messages: ChatMessage[];
   saveStatus: SaveStatus;
@@ -108,7 +107,7 @@ export function DocumentCreator({ documentId }: { documentId: number | null }) {
         setView((v) => ({ ...v, status: "ready", draft: saved.draft, messages: saved.messages, saveStatus: "saved" }));
       },
       (error: Error) => {
-        if (!cancelled) setView((v) => ({ ...v, status: "error", loadError: error.message }));
+        if (!cancelled) setView((v) => ({ ...v, status: { error: error.message } }));
       },
     );
     return () => {
@@ -141,7 +140,9 @@ export function DocumentCreator({ documentId }: { documentId: number | null }) {
   }
 
   function handleTurn(messages: ChatMessage[], draft: DocumentDraft) {
-    setView((v) => ({ ...v, messages, draft }));
+    // A reply that arrives after another document was opened belongs to the old one.
+    if (current.current.instance !== view.instance) return;
+    setView((v) => (v.instance === view.instance ? { ...v, messages, draft } : v));
     if (draft.documentType) save(draft, messages);
   }
 
@@ -154,11 +155,11 @@ export function DocumentCreator({ documentId }: { documentId: number | null }) {
       </p>
     );
   }
-  if (view.status === "error") {
+  if (typeof view.status === "object") {
     return (
       <div className={`${cardClass} px-6 py-12 text-center`}>
         <p role="alert" className="font-semibold text-navy">
-          Couldn’t open this document. {view.loadError}
+          Couldn’t open this document. {view.status.error}
         </p>
         <Link href="/documents/" className={`${buttonClass.outline} mt-6`}>
           Back to my documents
@@ -174,7 +175,7 @@ export function DocumentCreator({ documentId }: { documentId: number | null }) {
       <DraftDisclaimer />
       <div className="grid flex-1 gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <section aria-label="Chat with the AI assistant">
-          <DocumentChat messages={messages} draft={draft} onTurn={handleTurn} />
+          <DocumentChat key={view.instance} messages={messages} draft={draft} onTurn={handleTurn} />
         </section>
 
         <section aria-label="Document preview" className="lg:sticky lg:top-24 lg:self-start">

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { buttonClass, inputClass } from "@/components/ui/styles";
+import { alertClass, buttonClass, inputClass } from "@/components/ui/styles";
 import { signIn, signUp, useSession } from "@/lib/session";
 
 export const MIN_PASSWORD_LENGTH = 8;
@@ -91,7 +91,7 @@ export function AuthForm({ mode }: { mode: "signin" | "signup" }) {
         )}
       </label>
       {error && (
-        <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+        <p role="alert" className={alertClass}>
           {error}
         </p>
       )}
